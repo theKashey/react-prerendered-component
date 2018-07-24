@@ -28,6 +28,8 @@ but __use__ pre-rendered html until js code will be ready to replace it. Make it
   
 Bonus - you can store and restore component state.
 
+More detauls - https://twitter.com/theKashey/status/1021739948536295424
+
 ## Usage
 
 1. Restore data from HTML

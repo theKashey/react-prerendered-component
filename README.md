@@ -13,14 +13,17 @@
 __!! EXPERIMENTAL !!__
  
 ## Idea
-1. Server side render data 
+In short: dont try to __run__ js code, and produce a react tree matching pre-rendered one,
+but __use__ pre-rendered html until js code will be ready to replace it. Make it live.
+
+- Server side render data 
   - call `thisIsServer` somewhere, to let it know.
   - React-prerendered-component `will leave trails`, wrapping each block with _known_ id.
-2. Hydrate the client side 
+- Hydrate the client side 
   - React-prerendered-component will search their for ids, and `read rendered HTML` back from a page.
-3. You site is ready!
+- You site is ready!
   - React-prerendered-components are ready. They are rendering pre-rendered HTML you send from a server.
-4. Once any component ready to be replaced - replace it
+- Once any component ready to be replaced - replace it
   - But not before. That's the point :)
   
 Bonus - you can store and restore component state.

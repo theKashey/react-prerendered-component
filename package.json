@@ -1,0 +1,45 @@
+{
+  "name": "react-prerendered-component",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "ts-react-toolbox test",
+    "bootstrap": "ts-react-toolbox init",
+    "dev": "ts-react-toolbox dev",
+    "test:ci": "ts-react-toolbox test --runInBand --coverage",
+    "build": "ts-react-toolbox build",
+    "prepublish": "ts-react-toolbox build",
+    "release": "ts-react-toolbox release",
+    "lint": "ts-react-toolbox lint",
+    "static": "ts-react-toolbox publish",
+    "format": "ts-react-toolbox format",
+    "analyze": "ts-react-toolbox analyze"
+  },
+  "repository": "",
+  "author": "theKashey <thekashey@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/theKashey/react-prerendered-component/issues"
+  },
+  "homepage": "https://github.com/theKashey/react-prerendered-component#readme",
+  "peerDependencies": {
+    "react": "^16.3.0"
+  },
+  "devDependencies": {
+    "moment": "^2.22.2",
+    "react-loadable": "^5.4.0",
+    "ts-react-toolbox": "^0.1.15"
+  },
+  "engines": {
+    "node": ">=8.5.0"
+  },
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "keywords": [],
+  "dependencies": {
+    "react-uid": "^2.0.0"
+  }
+}

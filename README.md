@@ -72,7 +72,11 @@ const p = AsyncLoadedComponent.preload();
 
 ```
 
-PS: Prerendered component is working only once. Once it mounted for a first time. Next time another UID will be generated, and it will not find component to match.
+## Automatically goes live
+Prerendered component is work only once. Once it mounted for a first time. 
+
+Next time another UID will be generated, and it will not find component to match.
+If prerendered-component could not find corresponding component - it goes live automatically.
 
 ## Licence
 MIT

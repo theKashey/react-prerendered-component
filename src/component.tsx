@@ -30,7 +30,7 @@ export interface ComponentState {
 }
 
 const getInnerHTML = (id: string): string | null => {
-  const element = document.getElementById(id);
+  const element = document && document.getElementById(id);
   return element ? element.innerHTML : null;
 };
 
@@ -43,9 +43,7 @@ class PrerenderedWrapper extends React.Component<WrapperProps> {
     const {live, dehydrate, id} = this.props;
     if (!live) {
       const element = document.getElementById(id);
-      if (!element) {
-        throw new Error(`React-prerendered-component: source component with proposed id ${id} was not found`);
-      } else {
+      if (element) {
         dehydrate(element);
       }
     }
@@ -55,7 +53,7 @@ class PrerenderedWrapper extends React.Component<WrapperProps> {
     const {children, live, id, className, style} = this.props;
     const {html} = this.state;
     const props = {id, className, style, 'data-prerendered-border': true};
-    return live
+    return (live || !html)
       ? <div {...props}>{children}</div>
       : <div {...props} dangerouslySetInnerHTML={{__html: html || ''}}/>
   }
@@ -96,7 +94,7 @@ export class PrerenderedComponent extends React.Component<ComponentProps, Compon
               id={"prc-" + uid}
               className={className}
               style={style}
-              live={live === true || this.state.live || isServerSide}
+              live={live || this.state.live || isServerSide}
               dehydrate={this.dehydrate}
             >
               {store && <script type={`text/store-prc-${uid}`}>{JSON.stringify(store)}</script>}

@@ -1,9 +1,6 @@
 import * as React from 'react';
 import {UIDFork, UIDConsumer} from "react-uid";
-
-let isServerSide = false;
-
-export const thisIsServer = () => isServerSide = true;
+import {isThisServer} from "./utils";
 
 export interface ComponentProps {
   restore?: (element: HTMLElement, store?: any) => Promise<any> | any;
@@ -94,7 +91,7 @@ export class PrerenderedComponent extends React.Component<ComponentProps, Compon
               id={"prc-" + uid}
               className={className}
               style={style}
-              live={live || this.state.live || isServerSide}
+              live={live || this.state.live || isThisServer()}
               dehydrate={this.dehydrate}
             >
               {store && <script type={`text/store-prc-${uid}`}>{JSON.stringify(store)}</script>}

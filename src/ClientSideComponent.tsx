@@ -1,8 +1,12 @@
 import * as React from "react";
-import {isThisServer} from "./utils";
+import {PrerenderedControls} from "./PrerenderedControl";
 
 export const ClientSideComponent: React.SFC = ({children}) => (
-  isThisServer()
-    ? null
-    : <React.Fragment>{children}</React.Fragment>
+  <PrerenderedControls>
+    {({isServer}) => (
+      isServer
+        ? null
+        : <React.Fragment>{children}</React.Fragment>
+    )}
+  </PrerenderedControls>
 );

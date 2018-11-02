@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {Component} from 'react';
-import {PrerenderedComponent} from "../src/component";
+import {PrerenderedComponent, C, CachedLocation} from "../src/index";
 import * as Loadable from 'react-loadable';
 
 class Counter extends React.Component<{ counter: number, c2: number, onChange?: (s: any) => void }, { c: number }> {
@@ -75,34 +75,40 @@ export default class App extends Component <{}, AppState> {
   render() {
     return (
       <div>
-        <PrerenderedComponent
-          restore={this.restore}
-          live={!!this.state.counter}
-        >
-          <p>Am I alive?</p>
-          <Counter counter={this.state.counter} c2={this.state.c2}/>
-        </PrerenderedComponent>
+        <CachedLocation cacheKey="1">
+          test test
+        </CachedLocation>
+        <CachedLocation cacheKey="2">
+          test test
+        </CachedLocation>
+        {/*<PrerenderedComponent*/}
+          {/*restore={this.restore}*/}
+          {/*live={!!this.state.counter}*/}
+        {/*>*/}
+          {/*<p>Am I alive?</p>*/}
+          {/*<Counter counter={this.state.counter} c2={this.state.c2}/>*/}
+        {/*</PrerenderedComponent>*/}
 
-        <PrerenderedComponent
-          restore={this.restoreJSON}
-          live={!!this.state.s.counter}
-          store={this.state.s}
-        >
-          <p>Am I alive?</p>
-          <Counter counter={this.state.s.counter} c2={this.state.s.c2} onChange={this.setS}/>
-        </PrerenderedComponent>
+        {/*<PrerenderedComponent*/}
+          {/*restore={this.restoreJSON}*/}
+          {/*live={!!this.state.s.counter}*/}
+          {/*store={this.state.s}*/}
+        {/*>*/}
+          {/*<p>Am I alive?</p>*/}
+          {/*<Counter counter={this.state.s.counter} c2={this.state.s.c2} onChange={this.setS}/>*/}
+        {/*</PrerenderedComponent>*/}
 
-        <PrerenderedComponent
-          live={this.state.loaded}
-        >
-          <AsyncComponent/>
-        </PrerenderedComponent>
+        {/*<PrerenderedComponent*/}
+          {/*live={this.state.loaded}*/}
+        {/*>*/}
+          {/*<AsyncComponent/>*/}
+        {/*</PrerenderedComponent>*/}
 
-        <PrerenderedComponent
-          live={p}
-        >
-          <AsyncComponent/>
-        </PrerenderedComponent>
+        {/*<PrerenderedComponent*/}
+          {/*live={p}*/}
+        {/*>*/}
+          {/*<AsyncComponent/>*/}
+        {/*</PrerenderedComponent>*/}
 
       </div>
     )

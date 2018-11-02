@@ -71,6 +71,21 @@ const p = AsyncLoadedComponent.preload();
 </PrerenderedComponent>
 ```
 
+## Caching
+```js
+// Send the start of your HTML to the browser
+  response.write('<html><head><title>Page</title></head><body><div id="root">');
+
+  // Render your frontend to a stream and pipe it to the response
+  const stream = renderToNodeStream(<Frontend />);
+  stream.pipe(response, { end: 'false' });
+
+  // When React finishes rendering send the rest of your HTML to the browser
+  stream.on('end', () => {
+    response.end('</div></body></html>');
+  });
+```
+
 ### Additional API
 1. `ServerSideComponent` - component to be rendered only on server. Basically this is PrerenderedComponent with `live=false`
 2. `ClientSideComponent` - component to be rendered only on client. Some things are not subject for SSR.

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {UIDFork, UIDConsumer} from "react-uid";
-import {isThisServer} from "./utils";
+import {PrerenderedControls} from "./PrerenderedControl";
 
 export interface ComponentProps {
   restore?: (element: HTMLElement, store?: any) => Promise<any> | any;
@@ -84,22 +84,26 @@ export class PrerenderedComponent extends React.Component<ComponentProps, Compon
   render() {
     const {className, style, children, live, store} = this.props;
     return (
-      <UIDFork>
-        <UIDConsumer>
-          {uid => (
-            <PrerenderedWrapper
-              id={"prc-" + uid}
-              className={className}
-              style={style}
-              live={live || this.state.live || isThisServer()}
-              dehydrate={this.dehydrate}
-            >
-              {store && <script type={`text/store-prc-${uid}`}>{JSON.stringify(store)}</script>}
-              {children}
-            </PrerenderedWrapper>
-          )}
-        </UIDConsumer>
-      </UIDFork>
+      <PrerenderedControls>
+        {({isServer}) => (
+          <UIDFork>
+            <UIDConsumer>
+              {uid => (
+                <PrerenderedWrapper
+                  id={"prc-" + uid}
+                  className={className}
+                  style={style}
+                  live={live || this.state.live || isServer}
+                  dehydrate={this.dehydrate}
+                >
+                  {store && <script type={`text/store-prc-${uid}`}>{JSON.stringify(store)}</script>}
+                  {children}
+                </PrerenderedWrapper>
+              )}
+            </UIDConsumer>
+          </UIDFork>
+        )}
+      </PrerenderedControls>
     );
   }
 }

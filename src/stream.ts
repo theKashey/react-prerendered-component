@@ -10,7 +10,7 @@ interface TrackItem {
 }
 
 interface CacheTrack {
-  buffer: any[];
+  buffer: string;
 }
 
 interface CacheLine {
@@ -20,8 +20,8 @@ interface CacheLine {
 }
 
 export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
-  const data = [...line.tail, ...chunk.split('')];
-  const result: any[] = [];
+  const data = line.tail + chunk;
+  let result = '';
 
   let tracking = line.scopes;
 
@@ -29,8 +29,9 @@ export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
   let indexClose = 0;
   let isOpen = true;
 
-  data.forEach((c, index) => {
-    let push = [c];
+  for (let index = 0; index < data.length; index++) {
+    const c = data[index];
+    let push: string = c;
     if (c === '<') {
       indexOpen = index;
       indexClose = 0;
@@ -38,8 +39,8 @@ export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
     } else if (c === '>') {
       indexClose = index;
 
-      push = data.slice(indexOpen, indexClose + 1);
-      const tag = push.join('');
+      push = data.substring(indexOpen, indexClose + 1);
+      const tag = push;
 
       indexOpen = indexClose = 0;
       isOpen = true;
@@ -57,22 +58,22 @@ export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
         } else {
           if (isReStore) {
             const str = cache.get(+isReStore[1].trim()) || 'broken-cache';
-            push = String(str).split('');
+            push = String(str);
           } else if (isReStoreOpen) {
-            push = [];
+            push = "";
           } else if (isReStoreClose) {
             const str = cache.get(+isReStoreClose[1].trim()) || 'broken-cache';
-            push = String(str).split('');
+            push = String(str);
           } else if (isStoreOpen) {
             const key = isStoreOpen[1].trim();
-            line.cache[key] = {buffer: []};
-            push = [];
+            line.cache[key] = {buffer: ""};
+            push = "";
           } else if (isStoreClose) {
             const key = +isStoreClose[1].trim();
 
-            cache.set(key, line.cache[key].buffer.join(''));
+            cache.set(key, line.cache[key].buffer);
             delete line.cache[key];
-            push = [];
+            push = "";
           }
         }
       }
@@ -80,18 +81,19 @@ export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
 
     if (isOpen) {
 
-      result.push(...push);
+      result += push;
       Object
         .keys(line.cache)
-        .forEach(key => line.cache[key].buffer.push(...push));
+        .forEach(key => {
+          line.cache[key].buffer += push;
+        });
     }
-
-  });
+  }
   if (!isOpen) {
-    line.tail = data.slice(indexOpen, data.length);
+    line.tail = data.substring(indexOpen, data.length);
   }
   line.scopes = tracking;
-  return result.join('');
+  return result;
 };
 
 const createLine = (): CacheLine => ({
@@ -101,7 +103,9 @@ const createLine = (): CacheLine => ({
 });
 
 export const cacheRenderedToString = (str: string, cache: CacheControl) => (
-  process(str, createLine(), cache)
+  str.indexOf('x-cached') > 0
+    ? process(str, createLine(), cache)
+    : str
 );
 
 export const createCacheStream = (cache: CacheControl) => {

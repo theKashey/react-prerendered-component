@@ -89,7 +89,7 @@ import {
 const controller = cacheControler(cache);
 
 const result = renderToString(
-  <PrerenderedControler control={control}/>
+  <PrerenderedControler control={control}>
      <CachedLocation cacheKey="the-key">
         any content
      </CachedLocation>
@@ -106,7 +106,7 @@ const theRealResult = cacheRenderedToString(result);
 // Better use streams
 
 renderToNodeStream(
-  <PrerenderedControler control={control}/>
+  <PrerenderedControler control={control}>
      <CachedLocation cacheKey="the-key">
         any content
      </CachedLocation>
@@ -114,8 +114,8 @@ renderToNodeStream(
 )
 .pipe(createCacheStream(control)) // magic here
 .pipe(res)
-
 ```
+Stream API is completely _stream_ and would not delay Time-To-First-Byte
 
 - `PrerenderedControler` - top level controller for a cache. Requires `controler` to be set
 - `CachedLocation` - location to be cached. 

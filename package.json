@@ -1,8 +1,11 @@
 {
   "name": "react-prerendered-component",
   "version": "0.0.3",
-  "description": "",
-  "main": "dist/index.js",
+  "description": "React Advanced Caching technologies",
+  "jsnext:main": "dist/es2015/index.js",
+  "module": "dist/es2015/index.js",
+  "main": "dist/es5/index.js",
+  "sideEffects": false,
   "scripts": {
     "test": "ts-react-toolbox test",
     "bootstrap": "ts-react-toolbox init",
@@ -16,7 +19,7 @@
     "format": "ts-react-toolbox format",
     "analyze": "ts-react-toolbox analyze"
   },
-  "repository": "",
+  "repository": "https://github.com/theKashey/react-prerendered-component/",
   "author": "theKashey <thekashey@gmail.com>",
   "license": "MIT",
   "bugs": {
@@ -29,17 +32,23 @@
   "devDependencies": {
     "moment": "^2.22.2",
     "react-loadable": "^5.4.0",
-    "ts-react-toolbox": "^0.1.15"
+    "ts-react-toolbox": "^0.1.22"
   },
   "engines": {
     "node": ">=8.5.0"
   },
-  "types": "dist/index.d.ts",
+  "types": "dist/es5/index.d.ts",
   "files": [
     "dist"
   ],
-  "keywords": [],
+  "keywords": [
+    "component cache",
+    "cache",
+    "SSR",
+    "state"
+  ],
   "dependencies": {
+    "detect-node": "^2.0.4",
     "react-uid": "^2.0.0"
   }
 }

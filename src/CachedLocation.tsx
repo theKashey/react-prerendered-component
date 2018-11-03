@@ -1,18 +1,37 @@
 import * as React from "react";
 import {PrerenderedControls} from "./PrerenderedControl";
 
-const Uncached: React.SFC<{cacheId: number | string}> = ({cacheId, children}) => (
+const Uncached: React.SFC<{ cacheId: number | string }> = ({cacheId, children}) => (
   React.createElement(`x-cached-store-${cacheId}`, null, children)
 );
 
-export const CachedLocation: React.SFC<{cacheKey: string}> = ({cacheKey, children}) => (
+export interface CachedLocationProps {
+  cacheKey: string;
+  refresh?: boolean;
+  ttl?: number;
+  clientCache?: boolean;
+  noCache?: boolean;
+}
+
+export const CachedLocation: React.SFC<CachedLocationProps> = ({
+                                                                 cacheKey,
+                                                                 noCache,
+                                                                 clientCache,
+                                                                 ttl = Infinity,
+                                                                 refresh,
+                                                                 children
+                                                               }) => (
   <PrerenderedControls>
-    {({cache}) => {
-      const cached = cache.get(cacheKey);
-      if(cached) {
-        return React.createElement(`x-cached-restore-${cacheKey}`);
+    {({control, isServer}) => {
+      if (!isServer && !clientCache || noCache) {
+        return children;
+      }
+
+      const cached = control.cache.get(cacheKey);
+      if (cached && !refresh) {
+        return React.createElement(`x-cached-restore-${control.store(cacheKey, cached)}`);
       } else {
-        return <Uncached cacheId={cache.assign(cacheKey)}>{cacheKey}+{children}</Uncached>;
+        return <Uncached cacheId={control.assign(cacheKey, ttl)}>{children}</Uncached>;
       }
     }}
   </PrerenderedControls>

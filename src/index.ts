@@ -3,7 +3,8 @@ import {ClientSideComponent} from "./ClientSideComponent";
 import {ServerSideComponent} from "./ServerSideComponent";
 import {thisIsServer, isThisServer} from "./utils";
 import {CachedLocation} from "./CachedLocation";
-import {PrerenderedControler} from "./PrerenderedControl";
+import {PrerenderedControler, cacheControler} from "./PrerenderedControl";
+import {cacheRenderedToString, createCacheStream} from "./stream";
 
 export {
   PrerenderedComponent,
@@ -13,6 +14,9 @@ export {
   // waiting for the suspense
   CachedLocation,
   PrerenderedControler,
+  cacheControler,
+  cacheRenderedToString,
+  createCacheStream,
 
   thisIsServer,
   isThisServer,

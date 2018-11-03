@@ -72,19 +72,70 @@ const p = AsyncLoadedComponent.preload();
 ```
 
 ## Caching
+Prerendered component could also work as a component-level cache.
+Component caching is completely safe, compatible with any React version, but - absolutely
+synchronous, thus no Memcache or Redis are possible.
+ 
 ```js
-// Send the start of your HTML to the browser
-  response.write('<html><head><title>Page</title></head><body><div id="root">');
+import {renderToString, renderToNodeStream} from 'react-dom/server';
+import {
+  PrerenderedControler, 
+  cacheControler, 
+  CachedLocation, 
+  cacheRenderedToString, 
+  createCacheStream
+} from "react-prerendered-component";
 
-  // Render your frontend to a stream and pipe it to the response
-  const stream = renderToNodeStream(<Frontend />);
-  stream.pipe(response, { end: 'false' });
+const controller = cacheControler(cache);
 
-  // When React finishes rendering send the rest of your HTML to the browser
-  stream.on('end', () => {
-    response.end('</div></body></html>');
-  });
+const result = renderToString(
+  <PrerenderedControler control={control}/>
+     <CachedLocation cacheKey="the-key">
+        any content
+     </CachedLocation>
+  </PrerenderedControler>
+)
+
+// DO NOT USE result! It contains some system information  
+result === <x-cached-store-1>any content</x-cached-store-1>
+
+// actual caching performed in another place
+const theRealResult = cacheRenderedToString(result);
+
+
+// Better use streams
+
+renderToNodeStream(
+  <PrerenderedControler control={control}/>
+     <CachedLocation cacheKey="the-key">
+        any content
+     </CachedLocation>
+  </PrerenderedControler>
+)
+.pipe(createCacheStream(control)) // magic here
+.pipe(res)
+
 ```
+
+- `PrerenderedControler` - top level controller for a cache. Requires `controler` to be set
+- `CachedLocation` - location to be cached. 
+  - `cacheKey` - string - they key
+  - `ttl` - number - time to live
+  - `refresh` - boolean - flag to ignore cache
+  - `clientCache` - boolean - flag to enable cache on clientSide (disabled by default)
+  - `noChange` - boolean - disables cache at all
+  
+- `cacheControler(cache)` - a cache controller factor, requires object with `cache` interface to work.
+  - cache interface is `{ get(key): string, set(key, ttl):void }`
+  - cache implimentation is NOT provided by this library.
+  
+#### Sharing cache between multiple process
+Any network based caches are not supported, the best cache you can use - LRU, is bound to single
+process, while you probably want multi-threaded(workers) rendering, but dont want to maintain 
+per-instance cache.
+
+You may use nodejs shared-memory libraries (not supported by nodejs itself), like:
+ - https://github.com/allenluce/mmap-object 
 
 ### Additional API
 1. `ServerSideComponent` - component to be rendered only on server. Basically this is PrerenderedComponent with `live=false`

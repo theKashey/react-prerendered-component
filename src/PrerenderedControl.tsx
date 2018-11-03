@@ -4,36 +4,60 @@ import {isThisServer} from "./utils";
 export interface PrerenderedCache {
   get(key: string): string | false | null;
 
-  set(key: string, value: string): void;
+  set(key: string, value: string, ttl: number): void;
+}
 
-  assign(key: string): string | number;
+export interface CacheControl {
+  cache: PrerenderedCache;
+
+  get(key: number): string;
+
+  set(key: number, value: string): void;
+
+  store(key: string, value: string): void;
+
+  assign(key: string, ttl: number): number;
 }
 
 interface PrerenderControls {
-  isServer: boolean,
-  cache: PrerenderedCache,
+  isServer?: boolean,
+  control: CacheControl,
 }
 
-const defaultProps = {
-  isServer: isThisServer(),
-  cache: {
-    counter: 0,
-    get(): false {
-      return false;
+export const cacheControler = (cache: PrerenderedCache): CacheControl => {
+  let counter = 0;
+  const cachedValues: any = {};
+  const cached: any = {};
+  return {
+    cache,
+    get(key) {
+      return cachedValues[cached[key].key];
     },
-    set(): false {
-      return false;
+    set(id, value) {
+      const {key, ttl} = cached[id];
+      cache.set(key, value, ttl)
     },
-    assign(key: string) {
-      return key;
+    store(key: string, value: string) {
+      cachedValues[key] = value;
+      return this.assign(key, 0);
+    },
+    assign(key: string, ttl: number) {
+      counter++;
+      cached[counter] = {key, ttl};
+      return counter;
     }
   }
 };
 
-const context = React.createContext<PrerenderControls>(defaultProps);
+const context = React.createContext<PrerenderControls>({
+  isServer: isThisServer(),
+} as any);
 
-export const PrerenderedControler: React.SFC<Partial<PrerenderControls>> = ({children, ...props}) => (
-  <context.Provider value={{...defaultProps, ...props}}>
+export const PrerenderedControler: React.SFC<PrerenderControls> = ({children, ...props}) => (
+  <context.Provider value={{
+    isServer: isThisServer(),
+    ...props
+  }}>
     {children}
   </context.Provider>
 );

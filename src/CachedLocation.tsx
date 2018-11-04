@@ -1,4 +1,5 @@
 import * as React from "react";
+import {UIDFork} from "react-uid";
 import {PrerenderedControls} from "./PrerenderedControl";
 
 const Uncached: React.SFC<{ cacheId: number | string }> = ({cacheId, children}) => (
@@ -21,18 +22,20 @@ export const CachedLocation: React.SFC<CachedLocationProps> = ({
                                                                  refresh,
                                                                  children
                                                                }) => (
-  <PrerenderedControls>
-    {({control, isServer}) => {
-      if (!isServer && !clientCache || noCache || !control || !control.cache) {
-        return children;
-      }
+  <UIDFork>
+    <PrerenderedControls>
+      {({control, isServer}) => {
+        if (!isServer && !clientCache || noCache || !control || !control.cache) {
+          return children;
+        }
 
-      const cached = control.cache.get(cacheKey);
-      if (cached && !refresh) {
-        return React.createElement(`x-cached-restore-${control.store(cacheKey, cached)}`);
-      } else {
-        return <Uncached cacheId={control.assign(cacheKey, ttl)}>{children}</Uncached>;
-      }
-    }}
-  </PrerenderedControls>
+        const cached = control.cache.get(cacheKey);
+        if (cached && !refresh) {
+          return React.createElement(`x-cached-restore-${control.store(cacheKey, cached)}`);
+        } else {
+          return <Uncached cacheId={control.assign(cacheKey, ttl)}>{children}</Uncached>;
+        }
+      }}
+    </PrerenderedControls>
+  </UIDFork>
 );

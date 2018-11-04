@@ -93,7 +93,7 @@ export class PrerenderedComponent extends React.Component<ComponentProps, Compon
                   id={"prc-" + uid}
                   className={className}
                   style={style}
-                  live={live || this.state.live || isServer}
+                  live={!!(live || this.state.live || isServer)}
                   dehydrate={this.dehydrate}
                 >
                   {store && <script type={`text/store-prc-${uid}`}>{JSON.stringify(store)}</script>}

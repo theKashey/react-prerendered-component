@@ -1,7 +1,15 @@
 import * as React from 'react';
 import {renderToStaticMarkup, renderToStaticNodeStream} from 'react-dom/server';
 import {mount} from 'enzyme';
-import {PrerenderedControler, cacheControler, CachedLocation, cacheRenderedToString, createCacheStream} from "../src";
+import {
+  PrerenderedControler,
+  cacheControler,
+  CachedLocation,
+  cacheRenderedToString,
+  createCacheStream,
+  PrerenderedComponent
+} from "../src";
+import {UIDReset} from "react-uid";
 
 describe('Cache', () => {
   const createCache = (values: any) => {
@@ -112,4 +120,41 @@ describe('Cache', () => {
     expect(base).toEqual('<div>pre<x-cached-store-1>this is cached</x-cached-store-1>post</div>');
     expect(tr).toEqual('<div>prethis is cachedpost</div>');
   })
+
+  it('cached+prerendered', () => {
+    const cache = createCache({});
+    const control = cacheControler(cache);
+
+    const App = () => (
+      <div>
+        <UIDReset>
+          <PrerenderedControler control={control}>
+            pre
+            <CachedLocation cacheKey="test">
+              <PrerenderedComponent live={true}>
+                cached1
+              </PrerenderedComponent>
+              <PrerenderedComponent live={true}>
+                cached2
+              </PrerenderedComponent>
+            </CachedLocation>
+            post
+            <PrerenderedComponent live={true}>
+              cached3
+            </PrerenderedComponent>
+          </PrerenderedControler>
+        </UIDReset>
+      </div>
+    );
+
+    const expectedOutput = '<div>pre<div id="prc-1-1-1" data-prerendered-border="true">cached1</div><div id="prc-1-2-1" data-prerendered-border="true">cached2</div>post<div id="prc-2-1" data-prerendered-border="true">cached3</div></div>';
+
+    const rawOutput = renderToStaticMarkup(<App/>);
+    expect(rawOutput).toEqual('<div>pre<x-cached-store-1><div id="prc-1-1-1" data-prerendered-border="true">cached1</div><div id="prc-1-2-1" data-prerendered-border="true">cached2</div></x-cached-store-1>post<div id="prc-2-1" data-prerendered-border="true">cached3</div></div>');
+    expect(cacheRenderedToString(rawOutput, control)).toEqual(expectedOutput);
+
+    const cachedOutput = renderToStaticMarkup(<App/>);
+    expect(cachedOutput).toEqual('<div>pre<x-cached-restore-2></x-cached-restore-2>post<div id="prc-2-1" data-prerendered-border="true">cached3</div></div>');
+    expect(cacheRenderedToString(cachedOutput, control)).toEqual(expectedOutput);
+  });
 });

@@ -23,7 +23,7 @@ export const CachedLocation: React.SFC<CachedLocationProps> = ({
                                                                }) => (
   <PrerenderedControls>
     {({control, isServer}) => {
-      if (!isServer && !clientCache || noCache) {
+      if (!isServer && !clientCache || noCache || !control || !control.cache) {
         return children;
       }
 

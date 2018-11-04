@@ -137,6 +137,31 @@ per-instance cache.
 You may use nodejs shared-memory libraries (not supported by nodejs itself), like:
  - https://github.com/allenluce/mmap-object 
 
+#### Cache speed
+Results from rendering a single page 1000 times. All tests executed twice to mitigate possible v8 optimizations.
+dry      1373  
+base     1145 
+cache    1139 
+cache    1164 
+full     110  - full page render
+full     84   - full page render, or 0.084ms per page.
+```text
+dry      1013 - dry render to kick off HOT
+base     868  - the __real__ rendering speed, about 1.1ms per page
+cache    805  - with `cacheRenderedToString` used on uncachable appp
+cache    801  - second run (probably this is the "real" speed)
+partial  889  - with `cacheRenderedToString` used lightly cached app (the cost of caching)
+partial  876  - second run
+half     169  - page content cached
+half     153  - second run
+full     22   - full page caching
+full     19   - second run
+```
+- full page cache is 42x faster. 0.02ms per page render
+- half page render is 5x faster.
+- partial page render is 1.1x slower.
+
+
 ### Additional API
 1. `ServerSideComponent` - component to be rendered only on server. Basically this is PrerenderedComponent with `live=false`
 2. `ClientSideComponent` - component to be rendered only on client. Some things are not subject for SSR.

@@ -28,15 +28,18 @@ export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
   let indexOpen = 0;
   let indexClose = 0;
   let isOpen = true;
+  let phase = 0;
 
   for (let index = 0; index < data.length; index++) {
     const c = data[index];
     let push: string = c;
     if (c === '<') {
+      phase = 1;
       indexOpen = index;
       indexClose = 0;
       isOpen = false;
     } else if (c === '>') {
+      phase = 0;
       indexClose = index;
 
       push = data.substring(indexOpen, indexClose + 1);
@@ -77,10 +80,19 @@ export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
           }
         }
       }
+    } else {
+      let nextIndex = (phase === 0
+        ? data.indexOf('<', index)
+        : data.indexOf('>', index)
+      );
+
+      if(nextIndex > index) {
+        push = data.substring(index, nextIndex);
+        index = nextIndex - 1;
+      }
     }
 
     if (isOpen) {
-
       result += push;
       Object
         .keys(line.cache)

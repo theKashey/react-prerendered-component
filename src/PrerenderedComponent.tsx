@@ -5,10 +5,15 @@ import {PrerenderedControls} from "./PrerenderedControl";
 export interface ComponentProps {
   restore?: (element: HTMLElement, store?: any) => Promise<any> | any;
   store?: any;
-  live: boolean;
+  live: boolean | Promise<any>;
 
   className?: string;
   style?: React.CSSProperties
+}
+
+export interface ComponentState {
+  live: boolean;
+  state: any;
 }
 
 export interface WrapperProps {
@@ -18,12 +23,6 @@ export interface WrapperProps {
   live: boolean;
 
   dehydrate: (element: HTMLElement) => void;
-}
-
-export interface ComponentState {
-  live: boolean;
-  hydrated: boolean;
-  state: any;
 }
 
 const getInnerHTML = (id: string): string | null => {
@@ -56,19 +55,48 @@ class PrerenderedWrapper extends React.Component<WrapperProps> {
   }
 }
 
+const isBooleanFlag = (flag: boolean | Promise<any>): flag is boolean => (
+  !flag || typeof flag === 'boolean' || !flag.then
+);
+
 export class PrerenderedComponent extends React.Component<ComponentProps, ComponentState> {
 
   state: ComponentState = {
-    hydrated: false,
     state: null,
     live: false,
   };
 
+  awaitingFor: any = undefined;
+
+  static getDerivedStateFromProps(props: ComponentProps, state: ComponentState) {
+    if (isBooleanFlag(props.live) && props.live !== state.live) {
+      return {
+        live: props.live
+      }
+    }
+    return null;
+  }
+
   componentDidMount() {
-    if (this.props.live && this.props.live !== true) {
+    this.checkLive();
+  }
+
+  componentDidUpdate() {
+    this.checkLive();
+  }
+
+  checkLive() {
+    if (!isBooleanFlag(this.props.live)) {
+      this.awaitForLive(this.props.live);
+    }
+  }
+
+  awaitForLive(live: Promise<any>) {
+    if (this.awaitingFor !== live) {
+      this.awaitingFor = live;
       Promise
-        .resolve(this.props.live)
-        .then(live => this.setState({live: !!live}))
+        .resolve(live)
+        .then(value => this.props.live === live && this.setState({live: !!value}))
     }
   }
 
@@ -82,7 +110,8 @@ export class PrerenderedComponent extends React.Component<ComponentProps, Compon
   };
 
   render() {
-    const {className, style, children, live, store} = this.props;
+    const {className, style, children, store} = this.props;
+    const {live} = this.state;
     return (
       <PrerenderedControls>
         {({isServer}) => (
@@ -93,10 +122,11 @@ export class PrerenderedComponent extends React.Component<ComponentProps, Compon
                   id={"prc-" + uid}
                   className={className}
                   style={style}
-                  live={!!(live || this.state.live || isServer)}
+                  live={!!(live || isServer)}
                   dehydrate={this.dehydrate}
                 >
-                  {store && <script type={`text/store-prc-${uid}`}>{JSON.stringify(store)}</script>}
+                  {store &&
+                  <script type={`text/store-prc-${uid}`} dangerouslySetInnerHTML={{__html: JSON.stringify(store)}}/>}
                   {children}
                 </PrerenderedWrapper>
               )}

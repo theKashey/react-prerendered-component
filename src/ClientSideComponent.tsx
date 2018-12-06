@@ -3,10 +3,10 @@ import {PrerenderedControls} from "./PrerenderedControl";
 
 export const ClientSideComponent: React.SFC = ({children}) => (
   <PrerenderedControls>
-    {({isServer}) => (
+    {({isServer, hydrated}) => (
       isServer
         ? null
-        : <React.Fragment>{children}</React.Fragment>
+        : !hydrated && <React.Fragment>!{children}!</React.Fragment>
     )}
   </PrerenderedControls>
 );

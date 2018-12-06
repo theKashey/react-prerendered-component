@@ -10,9 +10,7 @@
   </a>
 </div>
 
-__!! EXPERIMENTAL !!__
- 
-## Idea
+ ## Idea
 In short: dont try to __run__ js code, and produce a react tree matching pre-rendered one,
 but __use__ pre-rendered html until js code will be ready to replace it. Make it live.
 
@@ -28,7 +26,7 @@ but __use__ pre-rendered html until js code will be ready to replace it. Make it
   
 Bonus - you can store and restore component state.
 
-More detauls - https://twitter.com/theKashey/status/1021739948536295424
+More details - https://twitter.com/theKashey/status/1021739948536295424
 
 ## Usage
 
@@ -60,15 +58,56 @@ More detauls - https://twitter.com/theKashey/status/1021739948536295424
 ```    
 
 3. Just do a partial hydrate
+If your code splitting library (not React.lazy) supports "preload" - you may use it to control code splitting
 ```js
-const AsyncLoadedComponent = loadable(() => import('deferredComponent'));
-const p = AsyncLoadedComponent.preload();
+const AsyncLoadedComponent = loadable(() => import('./deferredComponent'));
+const AsyncLoadedComponent = imported(() => import('./deferredComponent'));
 
 <PrerenderedComponent
-  live={p} // then Promise got resolve - component will go live  
+  live={AsyncLoadedComponent.preload()} // when Promise got resolve - component will go live  
 >
   <AsyncLoadedComponent />
 </PrerenderedComponent>
+```
+
+## Client side-only components
+It could be a case - some components should live only client-side, and completely skipped during SSR.
+```js
+import {render} from 'react-dom';
+import { ClientSideComponent } from "react-prerendered-component";
+
+const controller = cacheControler(cache);
+
+const result = render(
+  <ClientSideComponent>
+     Will be rendered only on client
+  </ClientSideComponent>
+);
+
+const result = hydrate(
+  <PrerenderedControler hydrated>
+      <ClientSideComponent>
+         Will be rendered only on client __AFTER__ hydrate
+      </ClientSideComponent>
+  </PrerenderedControler>
+);  
+
+```
+But this lo
+```js
+import {hydrate} from 'react-dom';
+import {
+  PrerenderedControler, 
+  cacheControler, 
+  CachedLocation, 
+  cacheRenderedToString, 
+  createCacheStream
+} from "react-prerendered-component";
+
+const controller = cacheControler(cache);
+
+const result = renderToString(
+  <PrerenderedControler control={control}>
 ```
 
 ## Caching
@@ -162,6 +201,7 @@ It is __safe__ to have `prerendered` component inside a cached location.
 ### Additional API
 1. `ServerSideComponent` - component to be rendered only on server. Basically this is PrerenderedComponent with `live=false`
 2. `ClientSideComponent` - component to be rendered only on client. Some things are not subject for SSR.
+`ClientSideComponent` would not be initially rendered with `hydrated` prop enabled 
 3. `thisIsServer(flag)` - override server/client flag
 4. `isThisServer()` - get current environment.
 

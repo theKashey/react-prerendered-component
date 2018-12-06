@@ -21,7 +21,12 @@ export interface CacheControl {
 
 interface PrerenderControls {
   isServer?: boolean,
-  control: CacheControl,
+  hydrated?: boolean,
+  control?: CacheControl,
+}
+
+interface PrerenderState {
+  hydrated?: boolean
 }
 
 export const cacheControler = (cache: PrerenderedCache): CacheControl => {
@@ -51,15 +56,36 @@ export const cacheControler = (cache: PrerenderedCache): CacheControl => {
 
 const context = React.createContext<PrerenderControls>({
   isServer: isThisServer(),
-} as any);
+  hydrated: false,
+  control: undefined // its not defined by default
+});
 
-export const PrerenderedControler: React.SFC<PrerenderControls> = ({children, ...props}) => (
-  <context.Provider value={{
-    isServer: isThisServer(),
-    ...props
-  }}>
-    {children}
-  </context.Provider>
-);
+export class PrerenderedControler extends React.Component<PrerenderControls, PrerenderState> {
+  state = {
+    hydrated: this.props.hydrated || false,
+  };
+
+  componentDidMount() {
+    if (this.props.hydrated) {
+      this.setState({
+        hydrated: false
+      })
+    }
+  }
+
+  render() {
+    const {children, ...props} = this.props;
+    return (
+      <context.Provider value={{
+        isServer: isThisServer(),
+        hydrated: false,
+        ...props,
+        ...this.state,
+      }}>
+        {children}
+      </context.Provider>
+    )
+  }
+};
 
 export const PrerenderedControls = context.Consumer;

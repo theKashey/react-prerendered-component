@@ -23,7 +23,7 @@ export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
   const data = line.tail + chunk;
   let result = '';
 
-  let tracking = line.scopes;
+  const tracking = line.scopes;
 
   let indexOpen = 0;
   let indexClose = 0;
@@ -81,7 +81,7 @@ export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
         }
       }
     } else {
-      let nextIndex = (phase === 0
+      const nextIndex = (phase === 0
         ? data.indexOf('<', index)
         : data.indexOf('>', index)
       );
@@ -126,7 +126,7 @@ export const createCacheStream = (cache: CacheControl) => {
 
   return new Transform({
     // transform() is called with each chunk of data
-    transform(chunk: any, encoding: string, callback: TransformCallback) {
+    transform(chunk: any, _: string, callback: TransformCallback) {
       callback(undefined, Buffer.from(process(chunk.toString('utf-8'), line, cache), 'utf-8'));
     },
 

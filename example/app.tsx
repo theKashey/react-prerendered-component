@@ -1,7 +1,9 @@
 import * as React from 'react';
 import {Component} from 'react';
-import {PrerenderedComponent, C, CachedLocation} from "../src/index";
+import {PrerenderedComponent, CachedLocation, ServerSideComponent, ClientSideComponent} from "../src/index";
 import * as Loadable from 'react-loadable';
+import imported from 'react-imported-component';
+import {renderToString} from "react-dom/server";
 
 class Counter extends React.Component<{ counter: number, c2: number, onChange?: (s: any) => void }, { c: number }> {
 
@@ -34,12 +36,23 @@ export interface AppState {
   loaded: boolean;
 }
 
-const AsyncComponent = Loadable({
-  loader: () => new Promise(resolve => setTimeout( () => resolve(import(/* webpackChunkName:'deferred' */ './deferred')), 10000)),
-  loading: () => <div> loading </div>
+const AsyncComponent1 = Loadable({
+  loader: () => new Promise(resolve => setTimeout(() => resolve(import(/* webpackChunkName:'deferred' */ './deferred')), 1000 + Math.random() * 5000)),
+  loading: () => <div> loading async </div>
 });
 
-const p = AsyncComponent.preload();
+const AsyncComponent2 = Loadable({
+  loader: () => new Promise(resolve => setTimeout(() => resolve(import(/* webpackChunkName:'deferred' */ './deferred')), 1000 + Math.random() * 5000)),
+  loading: () => <div> loading async </div>
+});
+
+const AsyncComponent3 = imported(
+  () => new Promise(resolve => setTimeout(() => resolve(import(/* webpackChunkName:'deferred' */ './deferred')), 1000 + Math.random() * 3000))
+);
+
+
+const p = AsyncComponent2.preload();
+
 
 export default class App extends Component <{}, AppState> {
   state: AppState = {
@@ -54,7 +67,7 @@ export default class App extends Component <{}, AppState> {
   };
 
   componentDidMount() {
-    AsyncComponent.preload().then(() => this.setState({loaded: true}));
+    AsyncComponent1.preload().then(() => this.setState({loaded: true}));
   }
 
   restore = (div: HTMLElement) => {
@@ -75,41 +88,57 @@ export default class App extends Component <{}, AppState> {
   render() {
     return (
       <div>
+        1
         <CachedLocation cacheKey="1">
           test test
         </CachedLocation>
+        2
         <CachedLocation cacheKey="2">
           test test
         </CachedLocation>
-        {/*<PrerenderedComponent*/}
-          {/*restore={this.restore}*/}
-          {/*live={!!this.state.counter}*/}
-        {/*>*/}
-          {/*<p>Am I alive?</p>*/}
-          {/*<Counter counter={this.state.counter} c2={this.state.c2}/>*/}
-        {/*</PrerenderedComponent>*/}
-
-        {/*<PrerenderedComponent*/}
-          {/*restore={this.restoreJSON}*/}
-          {/*live={!!this.state.s.counter}*/}
-          {/*store={this.state.s}*/}
-        {/*>*/}
-          {/*<p>Am I alive?</p>*/}
-          {/*<Counter counter={this.state.s.counter} c2={this.state.s.c2} onChange={this.setS}/>*/}
-        {/*</PrerenderedComponent>*/}
-
-        {/*<PrerenderedComponent*/}
-          {/*live={this.state.loaded}*/}
-        {/*>*/}
-          {/*<AsyncComponent/>*/}
-        {/*</PrerenderedComponent>*/}
-
-        {/*<PrerenderedComponent*/}
-          {/*live={p}*/}
-        {/*>*/}
-          {/*<AsyncComponent/>*/}
-        {/*</PrerenderedComponent>*/}
-
+        3
+        <ServerSideComponent>
+          Server-side rendered
+        </ServerSideComponent>
+        4
+        <ClientSideComponent>
+          Client-side rendered
+        </ClientSideComponent>
+        5
+        <PrerenderedComponent
+          restore={this.restore}
+          live={!!this.state.counter}
+        >
+          <p>Dom stored</p>
+          <Counter counter={this.state.counter} c2={this.state.c2}/>
+        </PrerenderedComponent>
+        6
+        <PrerenderedComponent
+          restore={this.restoreJSON}
+          live={!!this.state.s.counter}
+          store={this.state.s}
+        >
+          <p>JSON stored</p>
+          <Counter counter={this.state.s.counter} c2={this.state.s.c2} onChange={this.setS}/>
+        </PrerenderedComponent>
+        7
+        <PrerenderedComponent
+          live={this.state.loaded}
+        >
+          <AsyncComponent1/>
+        </PrerenderedComponent>
+        8
+        <PrerenderedComponent
+          live={p}
+        >
+          <AsyncComponent2/>
+        </PrerenderedComponent>
+        9
+        <PrerenderedComponent
+          live={AsyncComponent3.preload()}
+        >
+          <AsyncComponent3/>
+        </PrerenderedComponent>
       </div>
     )
   }

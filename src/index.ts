@@ -1,6 +1,6 @@
 import {PrerenderedComponent} from "./PrerenderedComponent";
-import {ClientSideComponent} from "./ClientSideComponent";
-import {ServerSideComponent} from "./ServerSideComponent";
+import {ClientSideComponent, clientSideComponent} from "./ClientSideComponent";
+import {ServerSideComponent, serverSideComponent} from "./ServerSideComponent";
 import {thisIsServer, isThisServer} from "./utils";
 import {CachedLocation} from "./CachedLocation";
 import {PrerenderedControler, cacheControler} from "./PrerenderedControl";
@@ -10,6 +10,8 @@ export {
   PrerenderedComponent,
   ClientSideComponent,
   ServerSideComponent,
+  clientSideComponent,
+  serverSideComponent,
 
   // waiting for the suspense
   CachedLocation,

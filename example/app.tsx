@@ -1,6 +1,13 @@
 import * as React from 'react';
 import {Component} from 'react';
-import {PrerenderedComponent, CachedLocation, ServerSideComponent, ClientSideComponent} from "../src/index";
+import {
+  PrerenderedComponent,
+  CachedLocation,
+  ServerSideComponent,
+  ClientSideComponent,
+  clientSideComponent,
+  serverSideComponent
+} from "../src/index";
 import * as Loadable from 'react-loadable';
 import imported from 'react-imported-component';
 import {renderToString} from "react-dom/server";
@@ -52,6 +59,10 @@ const AsyncComponent3 = imported(
 
 
 const p = AsyncComponent2.preload();
+
+const ClientSideOnly = clientSideComponent(({prop}: any) => <div>render 42: {prop}</div>);
+
+const ServerSideOnly = serverSideComponent(() => <div>should not be visible</div>);
 
 
 export default class App extends Component <{}, AppState> {
@@ -138,6 +149,14 @@ export default class App extends Component <{}, AppState> {
           live={AsyncComponent3.preload()}
         >
           <AsyncComponent3/>
+        </PrerenderedComponent>
+        <ClientSideOnly prop={42}/>
+        <ServerSideOnly/>
+
+        <PrerenderedComponent
+          live={false}
+        >
+          I am lost, but still rendered
         </PrerenderedComponent>
       </div>
     )

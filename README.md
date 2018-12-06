@@ -41,7 +41,10 @@ More details - https://twitter.com/theKashey/status/1021739948536295424
   <p>Am I alive?</p>
   <i>{this.props.counter}</i>
 </PrerenderedComponent>
-```    
+```
+
+Is components HTML was not generated during SSR, and it would be not present in the page code - 
+component will go `live` automatically, unless `strict` prop is set.
 
 2. Restore state from JSON stored among.
 ```js
@@ -91,24 +94,16 @@ const result = hydrate(
       </ClientSideComponent>
   </PrerenderedControler>
 );  
-
 ```
-But this lo
+
+- There is the same component for `ServerSideComponent`s
+- There are _hoc_ version for both cases
 ```js
-import {hydrate} from 'react-dom';
-import {
-  PrerenderedControler, 
-  cacheControler, 
-  CachedLocation, 
-  cacheRenderedToString, 
-  createCacheStream
-} from "react-prerendered-component";
+import {clientSideComponent} from 'react-prerendered-component';
 
-const controller = cacheControler(cache);
-
-const result = renderToString(
-  <PrerenderedControler control={control}>
+export default clientSideComponent(MyComponent);
 ```
+
 
 ## Caching
 Prerendered component could also work as a component-level cache.

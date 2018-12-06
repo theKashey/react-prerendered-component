@@ -1,4 +1,5 @@
 import * as React from "react";
+import hoistStat from 'hoist-react-statics';
 import {PrerenderedControls} from "./PrerenderedControl";
 
 export const ClientSideComponent: React.SFC = ({children}) => (
@@ -10,3 +11,11 @@ export const ClientSideComponent: React.SFC = ({children}) => (
     )}
   </PrerenderedControls>
 );
+
+export function clientSideComponent<K, T extends React.ComponentType<K>>(Component: T): T {
+  const C: any = Component;
+  return hoistStat(
+    (props: K) => <ClientSideComponent><C {...props}/></ClientSideComponent>,
+    Component
+  );
+}

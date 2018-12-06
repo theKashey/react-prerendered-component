@@ -50,6 +50,7 @@
   ],
   "dependencies": {
     "detect-node": "^2.0.4",
+    "hoist-react-statics": "^1.0.2",
     "react-uid": "^2.2.0"
   }
 }

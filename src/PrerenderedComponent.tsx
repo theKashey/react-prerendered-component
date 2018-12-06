@@ -6,6 +6,7 @@ export interface ComponentProps {
   restore?: (element: HTMLElement, store?: any) => Promise<any> | any;
   store?: any;
   live: boolean | Promise<any>;
+  strict?: boolean;
 
   className?: string;
   style?: React.CSSProperties
@@ -21,6 +22,7 @@ export interface WrapperProps {
   className?: string;
   style?: React.CSSProperties;
   live: boolean;
+  strict: boolean;
 
   dehydrate: (element: HTMLElement) => void;
 }
@@ -46,10 +48,10 @@ class PrerenderedWrapper extends React.Component<WrapperProps> {
   }
 
   render() {
-    const {children, live, id, className, style} = this.props;
+    const {children, live, strict, id, className, style} = this.props;
     const {html} = this.state;
     const props = {id, className, style, 'data-prerendered-border': true};
-    return (live || !html)
+    return (live || (!html && !strict))
       ? <div {...props}>{children}</div>
       : <div {...props} dangerouslySetInnerHTML={{__html: html || ''}}/>
   }
@@ -110,7 +112,7 @@ export class PrerenderedComponent extends React.Component<ComponentProps, Compon
   };
 
   render() {
-    const {className, style, children, store} = this.props;
+    const {className, style, children, store, strict = false} = this.props;
     const {live} = this.state;
     return (
       <PrerenderedControls>
@@ -123,6 +125,7 @@ export class PrerenderedComponent extends React.Component<ComponentProps, Compon
                   className={className}
                   style={style}
                   live={!!(live || isServer)}
+                  strict={strict}
                   dehydrate={this.dehydrate}
                 >
                   {store &&

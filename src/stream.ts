@@ -16,11 +16,11 @@ interface CacheTrack {
 interface CacheLine {
   cache: { [key: string]: CacheTrack }
   scopes: TrackItem[];
-  tail: any;
+  tail: string;
 }
 
-export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
-  const data = line.tail + chunk;
+export const process = (chunk: string, line: CacheLine, cache: CacheControl) => {
+  const data: string = line.tail + chunk;
   let result = '';
 
   const tracking = line.scopes;
@@ -82,11 +82,11 @@ export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
       }
     } else {
       const nextIndex = (phase === 0
-        ? data.indexOf('<', index)
-        : data.indexOf('>', index)
+          ? data.indexOf('<', index)
+          : data.indexOf('>', index)
       );
 
-      if(nextIndex > index) {
+      if (nextIndex > index) {
         push = data.substring(index, nextIndex);
         index = nextIndex - 1;
       }
@@ -111,7 +111,7 @@ export const process = (chunk: any, line: CacheLine, cache: CacheControl) => {
 const createLine = (): CacheLine => ({
   cache: {},
   scopes: [],
-  tail: [],
+  tail: '',
 });
 
 export const cacheRenderedToString = (str: string, cache: CacheControl) => (
@@ -131,7 +131,7 @@ export const createCacheStream = (cache: CacheControl) => {
     },
 
     flush(cb) {
-      cb();
+      cb(undefined, line.tail);
     }
   });
 };

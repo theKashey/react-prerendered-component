@@ -73,6 +73,29 @@ const AsyncLoadedComponent = imported(() => import('./deferredComponent'));
 </PrerenderedComponent>
 ```
 
+## Safe SSR-friendly code splitting
+In the case of SSR it's quite important, and quite hard, to load all the used chunks before
+triggering `hydrate` method, or some _unloaded_ parts would be replaced by "Loaders".
+
+Preloaded could help here, if your code-splitting library support `preloading`, __even__ if it does not support SSR.
+```js
+import imported from 'react-imported-component';
+import {PrerenderedComponent} from "react-prerendered-component";
+
+const AsyncComponent = imported(() => import('./myComponent.js'));
+
+<PrerenderedComponent
+  // component will "go live" when chunk loading would be done
+  live={AsyncComponent.preload()}
+>
+  // until component is not "live" prerendered HTML code would be used
+  // that's why you need to `preload`
+  <AsyncComponent/>
+</PrerenderedComponent>
+```
+Yet again - it works with any library which could `preload`, which is literally any library except
+`React.lazy`.
+
 ## Client side-only components
 It could be a case - some components should live only client-side, and completely skipped during SSR.
 ```js

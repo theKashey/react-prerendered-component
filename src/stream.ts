@@ -22,6 +22,50 @@ interface CacheLine {
   tail: string;
 }
 
+export const sequenceParser = (html: string, markers: Record<any, string>) => {
+  let position = Object.keys(markers).map(key => ({key, value: markers[key]}));
+  let index: number;
+  for (index = 0; index < html.length; index++) {
+    const c = html[index];
+    position = position.filter(position => position.value[index] === c);
+    if (position.length === 0) {
+      return false;
+    }
+    if (position.length === 1 && index === (position[0].value.length - 1)) {
+      break
+    }
+  }
+
+  const blocks = [];
+  let lastIndex = index + 1;
+  let isOpen = '';
+  let isBraceOpen = false;
+
+  for (; index < html.length; index++) {
+    const c = html[index];
+    if (!isBraceOpen) {
+      if (isOpen && c === '\\') {
+        isBraceOpen = true;
+      }
+      if (c === '"' && !isOpen) {
+        isOpen = c;
+      } else if (c === isOpen && isOpen) {
+        isOpen = '';
+      } else if ((c === ' ' || c === '>') && !isOpen) {
+        blocks.push(html.substring(lastIndex, index));
+        lastIndex = index + 1;
+      }
+    } else {
+      isBraceOpen = false;
+    }
+  }
+
+  return {
+    key: position[0].key,
+    blocks
+  };
+};
+
 export const toTemplateVariables = (variables): Record<string, string> => {
   return {};
 }
@@ -35,17 +79,18 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
   let indexOpen = 0;
   let indexClose = 0;
   let isOpen = true;
+  let isQuoteOpen = false;
   let phase = 0;
 
   for (let index = 0; index < data.length; index++) {
     const c = data[index];
     let push: string = c;
-    if (c === '<') {
+    if (c === '<' && !isQuoteOpen) {
       phase = 1;
       indexOpen = index;
       indexClose = 0;
       isOpen = false;
-    } else if (c === '>') {
+    } else if (c === '>' && !isQuoteOpen) {
       phase = 0;
       indexClose = index;
 
@@ -56,6 +101,9 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
       isOpen = true;
 
       if (tag[1] === 'x' || tag[2] === 'x') {
+
+        //sequenceParser(tag)
+
         const isStoreOpen = tag.match(/^<x-cached-store-([^>]*)>/i);
         const isStoreClose = tag.match(/^<\/x-cached-store-([^>]*)>/i);
 

@@ -1,4 +1,25 @@
-import {process} from '../src/stream';
+import {process, sequenceParser} from '../src/stream';
+
+describe('utils', () => {
+  it('smoke bad', () => {
+    const result = sequenceParser('<input-42 test value="42" value2="43>" end>', {
+      wrong: '<button',
+      alsoWrong: '<input-24',
+    });
+    expect(result).toBe(false);
+  });
+
+  it('sequenceParser', () => {
+    const result = sequenceParser('<input-42 test value="42 \\\"42" value2="43>" end>', {
+      wrong: '<button',
+      right: '<input-',
+    });
+    expect(result).not.toBe(false);
+    expect(result.key).toEqual('right');
+    expect(result.blocks).toEqual(['42', 'test', 'value="42 \\\"42"', 'value2="43>"', 'end']);
+  })
+
+});
 
 describe('stream', () => {
   const cacheControler = cache => cache as any;

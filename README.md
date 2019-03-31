@@ -181,10 +181,29 @@ Stream API is completely _stream_ and would not delay Time-To-First-Byte
   - `refresh` - boolean - flag to ignore cache
   - `clientCache` - boolean - flag to enable cache on clientSide (disabled by default)
   - `noChange` - boolean - disables cache at all
+- `NotCacheable` - mark location as non-cacheable, preventing memoization  
   
 - `cacheControler(cache)` - a cache controller factor, requires object with `cache` interface to work.
   - cache interface is `{ get(key): string, set(key, ttl):void }`
   - cache implimentation is NOT provided by this library.
+  
+#### NotCacheable
+Sometimes you might got something, which is not cacheable. 
+Sometimes cos you better not cache like - like personal information.
+Sometimes cos it reads data from variable sources and could not be "just cached".
+It is always __hard to manage__ it. So - just dont cache. It's a one line fix.
+
+```js
+import {NotCacheable, notCacheable} from 'react-prerendered-component';
+
+const SafeCache = () => (
+  <NotCacheable>
+    <YourComponent />
+  </NotCacheable>
+);
+
+const SafeComponent = notCacheable(YourComponent);
+```
   
 #### Sharing cache between multiple process
 Any network based caches are not supported, the best cache you can use - LRU, is bound to single

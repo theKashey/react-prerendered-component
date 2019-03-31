@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as nanoid from 'nanoid';
 import {isThisServer} from "./utils";
 
 export interface PrerenderedCache {
@@ -9,6 +10,7 @@ export interface PrerenderedCache {
 
 export interface CacheControl {
   cache: PrerenderedCache;
+  seed: string,
 
   get(key: number): string;
 
@@ -35,6 +37,7 @@ export const cacheControler = (cache: PrerenderedCache): CacheControl => {
   const cached: any = {};
   return {
     cache,
+    seed: nanoid(),
     get(key) {
       return cachedValues[cached[key].key];
     },
@@ -57,7 +60,7 @@ export const cacheControler = (cache: PrerenderedCache): CacheControl => {
 const context = React.createContext<PrerenderControls>({
   isServer: isThisServer(),
   hydrated: false,
-  control: undefined // its not defined by default
+  // control: undefined // its not defined by default
 });
 
 export class PrerenderedControler extends React.Component<PrerenderControls, PrerenderState> {
@@ -88,4 +91,16 @@ export class PrerenderedControler extends React.Component<PrerenderControls, Pre
   }
 };
 
+export const PrerenderedContext = context;
 export const PrerenderedControls = context.Consumer;
+
+
+interface TemplateControlState {
+  variables: Record<string, string | number>;
+  isServer: boolean,
+}
+
+export const TemplateControl = React.createContext<TemplateControlState>({
+  variables: {},
+  isServer: true,
+});

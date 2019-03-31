@@ -11,12 +11,19 @@ interface TrackItem {
 
 interface CacheTrack {
   buffer: string;
+  noCache: boolean;
+  variables: Record<string, string>;
 }
 
 interface CacheLine {
   cache: { [key: string]: CacheTrack }
   scopes: TrackItem[];
+  doNoCache: number;
   tail: string;
+}
+
+export const toTemplateVariables = (variables): Record<string, string> => {
+  return {};
 }
 
 export const process = (chunk: string, line: CacheLine, cache: CacheControl) => {
@@ -51,32 +58,55 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
       if (tag[1] === 'x' || tag[2] === 'x') {
         const isStoreOpen = tag.match(/^<x-cached-store-([^>]*)>/i);
         const isStoreClose = tag.match(/^<\/x-cached-store-([^>]*)>/i);
-        const isReStore = tag.match(/^<x-cached-restore-([^>]*)\/>/i);
 
-        const isReStoreOpen = tag.match(/^<x-cached-restore-([^>]*)>/i);
-        const isReStoreClose = tag.match(/^<\/x-cached-restore-([^>]*)>/i);
+        const isRestore = tag.match(/^<x-cached-restore-([^>]*)\/>/i);
+        const isRestoreOpen = tag.match(/^<x-cached-restore-([^>]*)>/i);
+        const isRestoreClose = tag.match(/^<\/x-cached-restore-([^>]*)>/i);
 
-        if (!isStoreOpen && !isStoreClose && !isReStore && !isReStoreOpen && !isReStoreClose) {
+        const isNotCacheOpen = tag.match(/^<x-cached-do-not-cache>/i);
+        const isNotCacheClose = tag.match(/^<\/x-cached-do-not-cache>/i);
+
+        if (!isStoreOpen && !isStoreClose && !isRestore && !isRestoreOpen && !isRestoreClose && !isNotCacheOpen && !isNotCacheClose) {
           // nope
         } else {
-          if (isReStore) {
-            const str = cache.get(+isReStore[1].trim()) || 'broken-cache';
+          push = "";
+
+          /// RESTORE
+          if (isRestore) {
+            const str = cache.get(+isRestore[1].trim()) || 'broken-cache';
             push = String(str);
-          } else if (isReStoreOpen) {
-            push = "";
-          } else if (isReStoreClose) {
-            const str = cache.get(+isReStoreClose[1].trim()) || 'broken-cache';
+          } else if (isRestoreOpen) {
+          } else if (isRestoreClose) {
+            const str = cache.get(+isRestoreClose[1].trim()) || 'broken-cache';
             push = String(str);
+
+            /// STORE
           } else if (isStoreOpen) {
-            const key = isStoreOpen[1].trim();
-            line.cache[key] = {buffer: ""};
-            push = "";
+            const variables = isStoreOpen[1].split(' ');
+            const key: string = variables[0];
+            line.cache[key] = {
+              buffer: "",
+              variables: toTemplateVariables(variables),
+              noCache: false
+            };
           } else if (isStoreClose) {
             const key = +isStoreClose[1].trim();
 
-            cache.set(key, line.cache[key].buffer);
+            // store cache only if allowed
+            if (!line.doNoCache && !line.cache[key].noCache) {
+              cache.set(key, line.cache[key].buffer);
+            }
             delete line.cache[key];
-            push = "";
+
+            /// CACHE
+          } else if (isNotCacheOpen) {
+            Object
+              .keys(line.cache)
+              .forEach(key => line.cache[key].noCache = true);
+
+            line.doNoCache++;
+          } else if (isNotCacheClose) {
+            line.doNoCache--;
           }
         }
       }
@@ -112,6 +142,7 @@ const createLine = (): CacheLine => ({
   cache: {},
   scopes: [],
   tail: '',
+  doNoCache: 0,
 });
 
 export const cacheRenderedToString = (str: string, cache: CacheControl) => (

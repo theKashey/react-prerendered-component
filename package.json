@@ -51,6 +51,7 @@
   "dependencies": {
     "detect-node": "^2.0.4",
     "hoist-react-statics": "^1.0.2",
+    "nanoid": "^2.0.1",
     "react-uid": "^2.2.0"
   }
 }

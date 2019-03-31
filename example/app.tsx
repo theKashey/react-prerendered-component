@@ -1,16 +1,19 @@
 import * as React from 'react';
 import {Component} from 'react';
+import * as moment from 'moment';
 import {
   PrerenderedComponent,
   CachedLocation,
   ServerSideComponent,
   ClientSideComponent,
   clientSideComponent,
-  serverSideComponent
+  serverSideComponent, cacheControler, PrerenderedControler,
+
 } from "../src/index";
 import * as Loadable from 'react-loadable';
 import imported from 'react-imported-component';
-import {renderToString} from "react-dom/server";
+import {mount} from "enzyme";
+import * as moment from "./deferred";
 
 class Counter extends React.Component<{ counter: number, c2: number, onChange?: (s: any) => void }, { c: number }> {
 
@@ -57,6 +60,16 @@ const AsyncComponent3 = imported(
   () => new Promise(resolve => setTimeout(() => resolve(import(/* webpackChunkName:'deferred' */ './deferred')), 1000 + Math.random() * 3000))
 );
 
+const Deferred = React.lazy(() => import(/* webpackChunkName:'deferred' */ './deferred'));
+
+const PrefetchMap = new WeakMap();
+const PrefetchLazy = lazy => {
+  let value = PrefetchMap.get(lazy) || lazy._ctor();
+  PrefetchMap.set(lazy, value);
+  return value;
+);
+
+console.log(PrefetchLazy(Deferred), PrefetchLazy(Deferred) == PrefetchLazy(Deferred));
 
 const p = AsyncComponent2.preload();
 
@@ -64,6 +77,20 @@ const ClientSideOnly = clientSideComponent(({prop}: any) => <div>render 42: {pro
 
 const ServerSideOnly = serverSideComponent(() => <div>should not be visible</div>);
 
+const createCache = (values: any) => {
+  const cache = {...values};
+  return {
+    set(key: string, value: string) {
+      cache[key] = value;
+    },
+    get(key: string) {
+      return cache[key]
+    }
+  }
+};
+
+const cache = createCache({});
+const control = cacheControler(cache);
 
 export default class App extends Component <{}, AppState> {
   state: AppState = {
@@ -100,14 +127,33 @@ export default class App extends Component <{}, AppState> {
     return (
       <div>
         1
-        <CachedLocation cacheKey="1">
+        <CachedLocation cacheKey="1" clientCache>
           test test
         </CachedLocation>
         2
-        <CachedLocation cacheKey="2">
+        <CachedLocation cacheKey="2" className="class42">
           test test
         </CachedLocation>
         3
+        <ClientSideComponent>
+          [[
+          <PrerenderedControler control={control}>
+            !!
+            <CachedLocation cacheKey="1" clientCache as="div">
+              cache1 test test {moment().format('MMMM Do YYYY, h:mm:ss a')}
+            </CachedLocation>
+            -
+            <CachedLocation cacheKey="2" as="span">
+              cache2 test test {moment().format('MMMM Do YYYY, h:mm:ss a')}
+            </CachedLocation>
+            -
+            <CachedLocation cacheKey="2" clientCache rehydrate>
+              cache3 test test {moment().format('MMMM Do YYYY, h:mm:ss a')}
+            </CachedLocation>
+            !!
+          </PrerenderedControler>
+          ]]
+        </ClientSideComponent>
         <ServerSideComponent>
           Server-side rendered
         </ServerSideComponent>
@@ -133,11 +179,13 @@ export default class App extends Component <{}, AppState> {
           <Counter counter={this.state.s.counter} c2={this.state.s.c2} onChange={this.setS}/>
         </PrerenderedComponent>
         7
-        <PrerenderedComponent
-          live={this.state.loaded}
-        >
-          <AsyncComponent1/>
-        </PrerenderedComponent>
+        <PrerenderedControler control={control}>
+          <PrerenderedComponent
+            live={this.state.loaded}
+          >
+            <AsyncComponent1/>
+          </PrerenderedComponent>
+        </PrerenderedControler>
         8
         <PrerenderedComponent
           live={p}

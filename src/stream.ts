@@ -39,6 +39,7 @@ export const sequenceParser = (html: string, markers: Record<any, string>) => {
   const blocks = [];
   let lastIndex = index + 1;
   let isOpen = '';
+  let closing = false;
   let isBraceOpen = false;
 
   for (; index < html.length; index++) {
@@ -54,6 +55,10 @@ export const sequenceParser = (html: string, markers: Record<any, string>) => {
       } else if ((c === ' ' || c === '>') && !isOpen) {
         blocks.push(html.substring(lastIndex, index));
         lastIndex = index + 1;
+      } else if (c === '/' && html[index + 1] === '>' && !isOpen) {
+        blocks.push(html.substring(lastIndex, index));
+        lastIndex = index + 1;
+        closing = true;
       }
     } else {
       isBraceOpen = false;
@@ -62,13 +67,14 @@ export const sequenceParser = (html: string, markers: Record<any, string>) => {
 
   return {
     key: position[0].key,
-    blocks
+    blocks,
+    closing,
   };
 };
 
 export const toTemplateVariables = (variables): Record<string, string> => {
   return {};
-}
+};
 
 export const process = (chunk: string, line: CacheLine, cache: CacheControl) => {
   const data: string = line.tail + chunk;
@@ -101,60 +107,75 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
       isOpen = true;
 
       if (tag[1] === 'x' || tag[2] === 'x') {
+        const prefix = `x-cached${cache.seed || ''}`;
 
-        //sequenceParser(tag)
+        const cmd = sequenceParser(tag, {
+          isStoreOpen: `<${prefix}-store-`,
+          isStoreClose: `</${prefix}-store-`,
+          isRestoreOpen: `<${prefix}-restore-`,
+          isRestoreClose: `</${prefix}-restore-`,
+          isNotCacheOpen: `<${prefix}-do-not-cache`,
+          isNotCacheClose: `</${prefix}-do-not-cache`,
+        });
 
-        const isStoreOpen = tag.match(/^<x-cached-store-([^>]*)>/i);
-        const isStoreClose = tag.match(/^<\/x-cached-store-([^>]*)>/i);
+        console.log(tag, cmd, prefix);
 
-        const isRestore = tag.match(/^<x-cached-restore-([^>]*)\/>/i);
-        const isRestoreOpen = tag.match(/^<x-cached-restore-([^>]*)>/i);
-        const isRestoreClose = tag.match(/^<\/x-cached-restore-([^>]*)>/i);
-
-        const isNotCacheOpen = tag.match(/^<x-cached-do-not-cache>/i);
-        const isNotCacheClose = tag.match(/^<\/x-cached-do-not-cache>/i);
-
-        if (!isStoreOpen && !isStoreClose && !isRestore && !isRestoreOpen && !isRestoreClose && !isNotCacheOpen && !isNotCacheClose) {
+        if (!cmd || !cmd.key) {
           // nope
         } else {
           push = "";
 
-          /// RESTORE
-          if (isRestore) {
-            const str = cache.get(+isRestore[1].trim()) || 'broken-cache';
-            push = String(str);
-          } else if (isRestoreOpen) {
-          } else if (isRestoreClose) {
-            const str = cache.get(+isRestoreClose[1].trim()) || 'broken-cache';
-            push = String(str);
-
-            /// STORE
-          } else if (isStoreOpen) {
-            const variables = isStoreOpen[1].split(' ');
-            const key: string = variables[0];
-            line.cache[key] = {
-              buffer: "",
-              variables: toTemplateVariables(variables),
-              noCache: false
-            };
-          } else if (isStoreClose) {
-            const key = +isStoreClose[1].trim();
-
-            // store cache only if allowed
-            if (!line.doNoCache && !line.cache[key].noCache) {
-              cache.set(key, line.cache[key].buffer);
+          switch (cmd.key) {
+            /// RESTORE
+            case 'isRestoreOpen': {
+              if (cmd.closing) {
+                const str = cache.get(+cmd.blocks[0]) || 'broken-cache';
+                push = String(str);
+              }
+              break;
             }
-            delete line.cache[key];
+            case 'isRestoreClose': {
+              const str = cache.get(+cmd.blocks[0]) || 'broken-cache';
+              push = String(str);
+              break;
+            }
 
             /// CACHE
-          } else if (isNotCacheOpen) {
-            Object
-              .keys(line.cache)
-              .forEach(key => line.cache[key].noCache = true);
+            case 'isStoreOpen': {
+              const key: string = cmd.blocks[0];
+              line.cache[key] = {
+                buffer: "",
+                variables: toTemplateVariables(cmd.blocks),
+                noCache: false
+              };
+              break;
+            }
 
-            line.doNoCache++;
-          } else if (isNotCacheClose) {
-            line.doNoCache--;
+            case 'isStoreClose': {
+              const key = +cmd.blocks[0];
+
+              // store cache only if allowed
+              if (!line.doNoCache && !line.cache[key].noCache) {
+                cache.set(key, line.cache[key].buffer);
+              }
+              delete line.cache[key];
+              break;
+            }
+
+            /// NO CACHE
+            case 'isNotCacheOpen': {
+              Object
+                .keys(line.cache)
+                .forEach(key => line.cache[key].noCache = true);
+
+              line.doNoCache++;
+              break;
+            }
+
+            case 'isNotCacheClose': {
+              line.doNoCache--;
+              break;
+            }
           }
         }
       }

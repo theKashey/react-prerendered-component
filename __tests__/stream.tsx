@@ -42,7 +42,7 @@ describe('stream', () => {
   it('inlines one cache', () => {
     expect(process('1<x-cached-restore-42/>3', createCacheLine(), cacheControler({
       get(key) {
-        return key === 42 ? "right" : "wrong";
+        return key === 42 ? "right" : `wrong${key}`;
       },
       set() {
       },

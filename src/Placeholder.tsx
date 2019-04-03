@@ -5,7 +5,7 @@ export const Placeholder: React.SFC<{ name: string }> = ({name}) => (
   <TemplateControl.Consumer>
     {({variables, isServer, seed}) => (
       isServer
-        ? React.createElement(`x-cached${seed}-placeholder-${name}`)
+        ? `{x-cached${seed}-placeholder-${name}/}`
         : (variables[name] || '{empty}')
     )}
   </TemplateControl.Consumer>
@@ -18,7 +18,7 @@ export const WithPlaceholder: React.SFC<{ children: RenderChildren }> = ({childr
     {({variables, isServer, seed}) => (
       children(name => (
         isServer
-          ? `<x-cached${seed}-placeholder-${name}/>`
+          ? `{x-cached${seed}-placeholder-${name}/}`
           : String((variables[name] || '{empty}'))
       ))
     )}

@@ -38,7 +38,7 @@ export const cacheControler = (cache: PrerenderedCache): CacheControl => {
   const cached: any = {};
   return {
     cache,
-    seed: nanoid(),
+    seed: nanoid().toLowerCase(),
     get(key) {
       return cachedValues[cached[key].key];
     },

@@ -53,10 +53,10 @@ export const sequenceParser = (html: string, markers: Record<any, string>) => {
         isOpen = c;
       } else if (c === isOpen && isOpen) {
         isOpen = '';
-      } else if ((c === ' ' || c === '>') && !isOpen) {
+      } else if ((c === ' ' || (c === '>' || c === '}')) && !isOpen) {
         blocks.push(html.substring(lastIndex, index));
         lastIndex = index + 1;
-      } else if (c === '/' && html[index + 1] === '>' && !isOpen) {
+      } else if (c === '/' && (html[index + 1] === '>' || html[index + 1] === '}') && !isOpen) {
         blocks.push(html.substring(lastIndex, index));
         lastIndex = index + 1;
         closing = true;
@@ -80,6 +80,17 @@ export const splitFirst = (str: string, needle: string) => {
     : [str];
 };
 
+export const nextIndexOf = (str: string, needles: string[], index: number) => {
+  for (let i = index; i < str.length; ++i) {
+    for (let j = 0; j < needles.length; ++j) {
+      if (str[i] == needles[j]) {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
+
 
 export const toTemplateVariables = (variables: string[]) => {
   if (variables.length === 1) {
@@ -95,14 +106,18 @@ export const toTemplateVariables = (variables: string[]) => {
   return result;
 };
 
-export const restore = (variables: any, chunk: string, cache: CacheControl) => {
+const lineVariables = (variables: any) => {
   const line = createLine();
   line.stack.push('*');
   line.cache['*'] = {
     variables,
     buffer: '',
   } as any;
-  return process(chunk, line, cache)
+  return line;
+};
+
+export const restore = (variables: any, chunk: string, cache: CacheControl) => {
+  return process(chunk, lineVariables(variables), cache)
 };
 
 export const process = (chunk: string, line: CacheLine, cache: CacheControl) => {
@@ -113,132 +128,168 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
 
   let indexOpen = 0;
   let indexClose = 0;
+  let braceIndexOpen = 0;
+  let braceIndexClose = 0;
   let isOpen = true;
-  let isQuoteOpen = false;
-  let phase = 0;
+  let isBraceOpen = true;
+  let tagPhase = 0;
+  let bracePhase = 0;
 
-  for (let index = 0; index < data.length; index++) {
-    const c = data[index];
-    let push: string = c;
-    let templatePush = '';
-    if (c === '<' && !isQuoteOpen) {
-      phase = 1;
-      indexOpen = index;
-      indexClose = 0;
-      isOpen = false;
-    } else if (c === '>' && !isQuoteOpen) {
-      phase = 0;
-      indexClose = index;
+  let push: string;
+  let templatePush: string = '';
 
-      push = data.substring(indexOpen, indexClose + 1);
-      const tag = push;
+  function parseTag(tag: string) {
+    indexOpen = indexClose = 0;
+    isOpen = true;
 
-      indexOpen = indexClose = 0;
-      isOpen = true;
+    const stind = tag.indexOf('x-cached');
 
-      if (tag[1] === 'x' || tag[2] === 'x') {
-        const prefix = `x-cached${cache.seed || ''}`;
+    if (stind <= 0) {
+      return
+    } else if (stind === 1 || stind === 2) {
+      const prefix = `x-cached${cache.seed || ''}`;
 
-        const cmd = sequenceParser(tag, {
-          isStoreOpen: `<${prefix}-store-`,
-          isStoreClose: `</${prefix}-store-`,
-          isRestoreOpen: `<${prefix}-restore-`,
-          isRestoreClose: `</${prefix}-restore-`,
-          isNotCacheOpen: `<${prefix}-do-not-cache`,
-          isNotCacheClose: `</${prefix}-do-not-cache`,
-          isPlaceholderOpen: `<${prefix}-placeholder-`,
-          isPlaceholderClose: `</${prefix}-placeholder-`,
-        });
+      const cmd = sequenceParser(tag, {
+        isStoreOpen: `<${prefix}-store-`,
+        isStoreClose: `</${prefix}-store-`,
+        isRestoreOpen: `<${prefix}-restore-`,
+        isRestoreClose: `</${prefix}-restore-`,
+        isNotCacheOpen: `<${prefix}-do-not-cache`,
+        isNotCacheClose: `</${prefix}-do-not-cache`,
+        isPlaceholderOpen: `{${prefix}-placeholder-`,
+      });
 
+      if (!cmd || !cmd.key) {
+        // nope
+      } else {
+        push = "";
 
-        if (!cmd || !cmd.key) {
-          // nope
-        } else {
-          push = "";
-
-          switch (cmd.key) {
-            /// RESTORE
-            case 'isRestoreOpen': {
-              if (cmd.closing) {
-                const str = cache.get(+cmd.blocks[0]) || 'broken-cache';
-                push = restore(toTemplateVariables(cmd.blocks), String(str), cache);
-              } else {
-                line.cache[+cmd.blocks[0]] = {
-                  buffer: "",
-                  variables: toTemplateVariables(cmd.blocks),
-                  noCache: false
-                }
-              }
-              break;
-            }
-            case 'isRestoreClose': {
+        switch (cmd.key) {
+          /// RESTORE
+          case 'isRestoreOpen': {
+            if (cmd.closing) {
               const str = cache.get(+cmd.blocks[0]) || 'broken-cache';
-              push = restore(line.cache[+cmd.blocks[0]].variables, String(str), cache);
-              break;
-            }
-
-            /// CACHE
-            case 'isStoreOpen': {
-              const key = +cmd.blocks[0];
-              line.cache[key] = {
+              push = restore(toTemplateVariables(cmd.blocks), String(str), cache);
+            } else {
+              line.cache[+cmd.blocks[0]] = {
                 buffer: "",
                 variables: toTemplateVariables(cmd.blocks),
                 noCache: false
-              };
-
-              line.stack.push(key);
-              break;
-            }
-
-            case 'isStoreClose': {
-              const key = +cmd.blocks[0];
-
-              // store cache only if allowed
-              if (!line.doNoCache && !line.cache[key].noCache) {
-                cache.set(key, line.cache[key].buffer);
               }
-              delete line.cache[key];
-              line.stack.pop();
-              break;
             }
+            break;
+          }
+          case 'isRestoreClose': {
+            const str = cache.get(+cmd.blocks[0]) || 'broken-cache';
+            push = restore(line.cache[+cmd.blocks[0]].variables, String(str), cache);
+            break;
+          }
 
-            /// PLACEHOLDER
-            case 'isPlaceholderOpen': {
-              if (cmd.closing) {
-                const key = cmd.blocks[0];
-                push = line.cache[line.stack[line.stack.length - 1]].variables[key];
-                templatePush = tag;
-              }
-              break;
+          /// CACHE
+          case 'isStoreOpen': {
+            const key = +cmd.blocks[0];
+            line.cache[key] = {
+              buffer: "",
+              variables: toTemplateVariables(cmd.blocks),
+              noCache: false
+            };
+
+            line.stack.push(key);
+            break;
+          }
+
+          case 'isStoreClose': {
+            const key = +cmd.blocks[0];
+
+            // store cache only if allowed
+            if (!line.doNoCache && !line.cache[key].noCache) {
+              cache.set(key, line.cache[key].buffer);
             }
-            case 'isPlaceholderClose': {
+            delete line.cache[key];
+            line.stack.pop();
+            break;
+          }
+
+          /// PLACEHOLDER
+          case 'isPlaceholderOpen': {
+            if (cmd.closing) {
               const key = cmd.blocks[0];
               push = line.cache[line.stack[line.stack.length - 1]].variables[key];
               templatePush = tag;
-              break;
             }
+            break;
+          }
+          case 'isPlaceholderClose': {
+            const key = cmd.blocks[0];
+            push = line.cache[line.stack[line.stack.length - 1]].variables[key];
+            templatePush = tag;
+            break;
+          }
 
-            /// NO CACHE
-            case 'isNotCacheOpen': {
-              Object
-                .keys(line.cache)
-                .forEach(key => line.cache[key].noCache = true);
+          /// NO CACHE
+          case 'isNotCacheOpen': {
+            Object
+              .keys(line.cache)
+              .forEach(key => line.cache[key].noCache = true);
 
-              line.doNoCache++;
-              break;
-            }
+            line.doNoCache++;
+            break;
+          }
 
-            case 'isNotCacheClose': {
-              line.doNoCache--;
-              break;
-            }
+          case 'isNotCacheClose': {
+            line.doNoCache--;
+            break;
           }
         }
       }
     } else {
-      const nextIndex = (phase === 0
-          ? data.indexOf('<', index)
-          : data.indexOf('>', index)
+      templatePush = tag;
+      push = tag[0] + process(
+        tag.substr(1, tag.length - 2),
+        lineVariables(line.cache[line.stack[line.stack.length - 1]].variables),
+        cache,
+      ) + tag[tag.length - 1];
+    }
+  }
+
+  for (let index = 0; index < data.length; index++) {
+    const c = data[index];
+    push = c;
+    templatePush = '';
+
+    if (c === '<') {
+      tagPhase = 1;
+      indexOpen = index;
+      indexClose = 0;
+      isOpen = false;
+    } else if (c === '>') {
+      tagPhase = 0;
+      indexClose = index;
+
+      push = data.substring(indexOpen, indexClose + 1);
+      parseTag(push);
+      isOpen = true;
+    } else if (c === '{') {
+      bracePhase = 1;
+      braceIndexOpen = index;
+      braceIndexClose = 0;
+      isBraceOpen = false;
+    } else if (c === '}') {
+      bracePhase = 0;
+      braceIndexClose = index;
+
+      push = data.substring(braceIndexOpen, braceIndexClose + 1);
+      parseTag(push);
+      isBraceOpen = true;
+    } else {
+      const nextIndex = (
+        tagPhase === 1
+          ? data.indexOf('>', index)
+          : (
+            bracePhase === 1
+              ? data.indexOf('}', index)
+              : nextIndexOf(data, ['<', '{'], index)
+          )
       );
 
       if (nextIndex > index) {
@@ -247,7 +298,7 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
       }
     }
 
-    if (isOpen) {
+    if (isOpen && isBraceOpen) {
       result += push;
       Object
         .keys(line.cache)
@@ -256,7 +307,7 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
         });
     }
   }
-  if (!isOpen) {
+  if (!(isOpen && isBraceOpen)) {
     line.tail = data.substring(indexOpen, data.length);
   }
   line.scopes = tracking;

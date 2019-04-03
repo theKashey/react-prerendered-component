@@ -220,7 +220,7 @@ describe('Cache', () => {
 
   describe('templatization', () => {
     it('Placeholder', () => {
-      expect(mount(<Placeholder name={"test"}/>).debug()).toMatch(/\<x-cached-placeholder-test \/>/);
+      expect(mount(<Placeholder name={"test"}/>).debug()).toMatch(/{x-cached-placeholder-test\/}/);
     });
 
     it('templates', () => {
@@ -236,7 +236,7 @@ describe('Cache', () => {
           </PrerenderedControler>
         </div>
       );
-      expect(output).toEqual('<div><x-cached-store-1 name="test">this is <x-cached-placeholder-name></x-cached-placeholder-name></x-cached-store-1></div>');
+      expect(output).toEqual('<div><x-cached-store-1 name="test">this is {x-cached-placeholder-name/}</x-cached-store-1></div>');
       expect(cacheRenderedToString(output, control)).toEqual('<div>this is test</div>');
 
       const outputUpdate = renderToStaticMarkup(
@@ -258,10 +258,10 @@ describe('Cache', () => {
       const output = renderToStaticMarkup(
         <div>
           <PrerenderedControler control={control}>
-            <CachedLocation cacheKey="test" variables={{v1: 'test1', v2: 'test2', t: 'title'}}>
+            <CachedLocation cacheKey="test" variables={{v1: 'test1', v2: 'test2', t: 'title', t2: 'data'}}>
               <WithPlaceholder>
                 {(placeholder) => (
-                  <div title={placeholder("t")}>
+                  <div title={placeholder("t")} data-title={placeholder("t2")}>
                     <Placeholder name="v1"/> + <Placeholder name="v2"/>
                   </div>
                 )}
@@ -270,7 +270,18 @@ describe('Cache', () => {
           </PrerenderedControler>
         </div>
       );
-      expect(cacheRenderedToString(output, control)).toEqual('<div><div title=\\"title\\">test1 + test2</div></div>');
+      expect(cacheRenderedToString(output, control)).toEqual('<div><div title="title" data-title="data">test1 + test2</div></div>');
+
+      const outputUpdate = renderToStaticMarkup(
+        <div>
+          <PrerenderedControler control={control}>
+            <CachedLocation cacheKey="test" variables={{v1: 'yep1', v2: 'yep2', t: 'yep3'}}>
+              just empty
+            </CachedLocation>
+          </PrerenderedControler>
+        </div>
+      );
+      expect(cacheRenderedToString(outputUpdate, control)).toEqual('<div><div title="yep3" data-title="undefined">yep1 + yep2</div></div>');
     });
   });
 });

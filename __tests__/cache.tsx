@@ -11,6 +11,7 @@ import {
   NotCacheable, Placeholder
 } from "../src";
 import {UIDReset} from "react-uid";
+import {WithPlaceholder} from "../src/Placeholder";
 
 describe('Cache', () => {
   const createCache = (values: any) => {
@@ -219,8 +220,7 @@ describe('Cache', () => {
 
   describe('templatization', () => {
     it('Placeholder', () => {
-      expect(mount(<Placeholder name={"test"}/>).debug()).toMatch(/\{##test##\}/);
-      // expect(mount(<Placeholder name={"test"}/>).text()).toEqual('{##test##}');
+      expect(mount(<Placeholder name={"test"}/>).debug()).toMatch(/\<x-cached-placeholder-test \/>/);
     });
 
     it('templates', () => {
@@ -236,8 +236,41 @@ describe('Cache', () => {
           </PrerenderedControler>
         </div>
       );
-      expect(output).toEqual('<div><x-cached-store-1 name="test">this is {##name##}</x-cached-store-1></div>');
+      expect(output).toEqual('<div><x-cached-store-1 name="test">this is <x-cached-placeholder-name></x-cached-placeholder-name></x-cached-store-1></div>');
       expect(cacheRenderedToString(output, control)).toEqual('<div>this is test</div>');
+
+      const outputUpdate = renderToStaticMarkup(
+        <div>
+          <PrerenderedControler control={control}>
+            <CachedLocation cacheKey="test" variables={{name: 'update'}}>
+              updated text <Placeholder name="name"/>
+            </CachedLocation>
+          </PrerenderedControler>
+        </div>
+      );
+      expect(cacheRenderedToString(outputUpdate, control)).toEqual('<div>this is update</div>');
+    });
+
+    it('templates hard', () => {
+      const cache = createCache({});
+      const control = cacheControler(cache);
+      control.seed = '';
+      const output = renderToStaticMarkup(
+        <div>
+          <PrerenderedControler control={control}>
+            <CachedLocation cacheKey="test" variables={{v1: 'test1', v2: 'test2', t: 'title'}}>
+              <WithPlaceholder>
+                {(placeholder) => (
+                  <div title={placeholder("t")}>
+                    <Placeholder name="v1"/> + <Placeholder name="v2"/>
+                  </div>
+                )}
+              </WithPlaceholder>
+            </CachedLocation>
+          </PrerenderedControler>
+        </div>
+      );
+      expect(cacheRenderedToString(output, control)).toEqual('<div><div title=\\"title\\">test1 + test2</div></div>');
     });
   });
 });

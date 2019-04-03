@@ -1,6 +1,13 @@
-import {process, sequenceParser} from '../src/stream';
+import {process, sequenceParser, splitFirst} from '../src/stream';
 
 describe('utils', () => {
+  it('splitFirst', () => {
+    expect(splitFirst('x?y','?')).toEqual(['x','y']);
+    expect(splitFirst('x?y','x')).toEqual(['','?y']);
+    expect(splitFirst('x?y','y')).toEqual(['x?','']);
+    expect(splitFirst('x?y','z')).toEqual(['x?y']);
+  });
+
   it('smoke bad', () => {
     const result = sequenceParser('<input-42 test value="42" value2="43>" end>', {
       wrong: '<button',
@@ -27,6 +34,7 @@ describe('stream', () => {
     cache: {},
     scopes: [],
     tail: [],
+    stack: [],
   });
 
   it('extracts one tag without touching the cache', () => {

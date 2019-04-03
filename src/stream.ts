@@ -18,6 +18,7 @@ interface CacheTrack {
 interface CacheLine {
   cache: { [key: string]: CacheTrack }
   scopes: TrackItem[];
+  stack: Array<string | number>;
   doNoCache: number;
   tail: string;
 }
@@ -72,8 +73,36 @@ export const sequenceParser = (html: string, markers: Record<any, string>) => {
   };
 };
 
-export const toTemplateVariables = (variables): Record<string, string> => {
-  return {};
+export const splitFirst = (str: string, needle: string) => {
+  const position = str.indexOf(needle);
+  return position >= 0
+    ? [str.substr(0, position), str.substr(position + 1)]
+    : [str];
+};
+
+
+export const toTemplateVariables = (variables: string[]) => {
+  if (variables.length === 1) {
+    return {};
+  }
+  const result: Record<string, string | boolean> = {};
+  variables.forEach((str, index) => {
+    if (index > 0) {
+      const [key, value] = splitFirst(str, '=');
+      result[key] = value ? value.substring(1, value.length - 1) : true;
+    }
+  });
+  return result;
+};
+
+export const restore = (variables: any, chunk: string, cache: CacheControl) => {
+  const line = createLine();
+  line.stack.push('*');
+  line.cache['*'] = {
+    variables,
+    buffer: '',
+  } as any;
+  return process(chunk, line, cache)
 };
 
 export const process = (chunk: string, line: CacheLine, cache: CacheControl) => {
@@ -91,6 +120,7 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
   for (let index = 0; index < data.length; index++) {
     const c = data[index];
     let push: string = c;
+    let templatePush = '';
     if (c === '<' && !isQuoteOpen) {
       phase = 1;
       indexOpen = index;
@@ -116,9 +146,10 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
           isRestoreClose: `</${prefix}-restore-`,
           isNotCacheOpen: `<${prefix}-do-not-cache`,
           isNotCacheClose: `</${prefix}-do-not-cache`,
+          isPlaceholderOpen: `<${prefix}-placeholder-`,
+          isPlaceholderClose: `</${prefix}-placeholder-`,
         });
 
-        console.log(tag, cmd, prefix);
 
         if (!cmd || !cmd.key) {
           // nope
@@ -130,24 +161,32 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
             case 'isRestoreOpen': {
               if (cmd.closing) {
                 const str = cache.get(+cmd.blocks[0]) || 'broken-cache';
-                push = String(str);
+                push = restore(toTemplateVariables(cmd.blocks), String(str), cache);
+              } else {
+                line.cache[+cmd.blocks[0]] = {
+                  buffer: "",
+                  variables: toTemplateVariables(cmd.blocks),
+                  noCache: false
+                }
               }
               break;
             }
             case 'isRestoreClose': {
               const str = cache.get(+cmd.blocks[0]) || 'broken-cache';
-              push = String(str);
+              push = restore(line.cache[+cmd.blocks[0]].variables, String(str), cache);
               break;
             }
 
             /// CACHE
             case 'isStoreOpen': {
-              const key: string = cmd.blocks[0];
+              const key = +cmd.blocks[0];
               line.cache[key] = {
                 buffer: "",
                 variables: toTemplateVariables(cmd.blocks),
                 noCache: false
               };
+
+              line.stack.push(key);
               break;
             }
 
@@ -159,6 +198,23 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
                 cache.set(key, line.cache[key].buffer);
               }
               delete line.cache[key];
+              line.stack.pop();
+              break;
+            }
+
+            /// PLACEHOLDER
+            case 'isPlaceholderOpen': {
+              if (cmd.closing) {
+                const key = cmd.blocks[0];
+                push = line.cache[line.stack[line.stack.length - 1]].variables[key];
+                templatePush = tag;
+              }
+              break;
+            }
+            case 'isPlaceholderClose': {
+              const key = cmd.blocks[0];
+              push = line.cache[line.stack[line.stack.length - 1]].variables[key];
+              templatePush = tag;
               break;
             }
 
@@ -196,7 +252,7 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
       Object
         .keys(line.cache)
         .forEach(key => {
-          line.cache[key].buffer += push;
+          line.cache[key].buffer += templatePush || push;
         });
     }
   }
@@ -210,6 +266,7 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
 const createLine = (): CacheLine => ({
   cache: {},
   scopes: [],
+  stack: [],
   tail: '',
   doNoCache: 0,
 });

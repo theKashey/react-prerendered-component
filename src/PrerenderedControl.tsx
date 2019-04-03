@@ -1,4 +1,5 @@
 import * as React from 'react';
+// @ts-ignore
 import * as nanoid from 'nanoid';
 import {isThisServer} from "./utils";
 
@@ -98,9 +99,11 @@ export const PrerenderedControls = context.Consumer;
 interface TemplateControlState {
   variables: Record<string, string | number>;
   isServer: boolean,
+  seed: string,
 }
 
 export const TemplateControl = React.createContext<TemplateControlState>({
   variables: {},
   isServer: true,
+  seed: ''
 });

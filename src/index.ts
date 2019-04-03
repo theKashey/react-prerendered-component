@@ -6,7 +6,7 @@ import {CachedLocation} from "./CachedLocation";
 import {NotCacheable, notCacheable} from './NotCacheable';
 import {PrerenderedControler, cacheControler} from "./PrerenderedControl";
 import {cacheRenderedToString, createCacheStream} from "./stream";
-import {Placeholder} from "./Placeholder";
+import {Placeholder, WithPlaceholder} from "./Placeholder";
 
 export {
   PrerenderedComponent,
@@ -22,6 +22,7 @@ export {
   NotCacheable,
   PrerenderedControler,
   Placeholder,
+  WithPlaceholder,
 
   cacheControler,
   cacheRenderedToString,

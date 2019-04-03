@@ -1,7 +1,7 @@
 <div align="center">
   <h1>React Prerendered Component</h1>
   <br/>
-  Partial Hydration in pre-suspense era. 
+  Partial Hydration and Component-Level Caching 
   <br/>
   <br/>
   
@@ -10,19 +10,25 @@
   </a>
 </div>
 
- ## Idea
+## Idea
 In short: dont try to __run__ js code, and produce a react tree matching pre-rendered one,
 but __use__ pre-rendered html until js code will be ready to replace it. Make it live.
 
+What else could be done on HTML level? Caching, _templatization_, and other good things to 🚀
+
+
+#### Prerendered component
+>Render something on server, and use it as HTML on the client
+
 - Server side render data 
-  - call `thisIsServer` somewhere, to let it know.
-  - React-prerendered-component `will leave trails`, wrapping each block with _known_ id.
+  - call `thisIsServer` somewhere, to setup enviroment.
+  - React-prerendered-component `will leave trails`, wrapping each block with div with _known_ id.
 - Hydrate the client side 
-  - React-prerendered-component will search their for ids, and `read rendered HTML` back from a page.
+  - React-prerendered-component will search for _known_ ids, and `read rendered HTML` back from a page.
 - You site is ready!
-  - React-prerendered-components are ready. They are rendering pre-rendered HTML you send from a server.
-- Once any component ready to be replaced - replace it
-  - But not before. That's the point :)
+  - React-prerendered-components are ready. They are rendering a pre-existing HTML you send from a server.
+- Once any component ready to be replaced - hydrate 
+  - But not before. That's the point - partial hydration, step by step
   
 Bonus - you can store and restore component state.
 
@@ -127,7 +133,6 @@ import {clientSideComponent} from 'react-prerendered-component';
 export default clientSideComponent(MyComponent);
 ```
 
-
 ## Caching
 Prerendered component could also work as a component-level cache.
 Component caching is completely safe, compatible with any React version, but - absolutely
@@ -154,14 +159,15 @@ const result = renderToString(
 )
 
 // DO NOT USE result! It contains some system information  
-result === <x-cached-store-1>any content</x-cached-store-1>
+result === <x-cachedRANDOM_SEED-store-1>any content</x-cachedRANDOM_SEED-store-1>
 
 // actual caching performed in another place
 const theRealResult = cacheRenderedToString(result);
 
+theRealResult  === "any content";
+
 
 // Better use streams
-
 renderToNodeStream(
   <PrerenderedControler control={control}>
      <CachedLocation cacheKey="the-key">
@@ -181,12 +187,39 @@ Stream API is completely _stream_ and would not delay Time-To-First-Byte
   - `refresh` - boolean - flag to ignore cache
   - `clientCache` - boolean - flag to enable cache on clientSide (disabled by default)
   - `noChange` - boolean - disables cache at all
-- `NotCacheable` - mark location as non-cacheable, preventing memoization  
+  - `variables` - object - varibles to use in templatization
   
+  - `as=span` - string, used only for client-side cache to define a `wrapper` tag
+  - `className` - string, used only for client-side cache
+  - `rehydrate` - boolean, used only for client-side cache, false values would keep content as a _dead_ html.
+- `Placeholder` - a template value
+  - `name` - a variable name
+- `WithPlaceholder` - renderprop version of `Placeholder`   
+- `NotCacheable` - mark location as non-cacheable, preventing memoization    
 - `cacheControler(cache)` - a cache controller factor, requires object with `cache` interface to work.
   - cache interface is `{ get(key): string, set(key, ttl):void }`
   - cache implimentation is NOT provided by this library.
-  
+
+#### Placeholder and Templatization
+To optimize rendering performance and reduce memory usage you might use cache _templates_:
+```js
+import {CachedLocation, Placeholder, WidthPlaceholder} from 'react-prerendered-component';
+
+const Component = () => (
+  <CachedLocation key="myKey" variabes={{name: "GitHub", secret: 42 }}>
+    the <Placeholder name="name"/>`s secret is <Placeholder name="secret"/>
+    // it's easy to use placeholders in a plain HTML 
+    
+    <WithPlaceholder>
+    { placeholder => (
+       <img src="./img.jpg" alt={placeholder("name") + placeholder("secret")}/>
+       // but to use it in "string" attribures you have to use render props
+    )}
+    </WithPlaceholder>
+  </CachedLocation>
+)
+```   
+    
 #### NotCacheable
 Sometimes you might got something, which is not cacheable. 
 Sometimes cos you better not cache like - like personal information.

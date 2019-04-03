@@ -91,7 +91,7 @@ export class ClientCachedLocation extends React.Component<ClientCachedLocationPr
 
     if (variables) {
       return (
-        <Tag className={className} ref={this.onSetRef}>
+        <Tag className={className}>
           <TemplateControl.Consumer>
             {oldState =>
               <TemplateControl.Provider value={{variables: {...oldState.variables, ...variables}, ...oldState}}>

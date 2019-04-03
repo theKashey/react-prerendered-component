@@ -14,8 +14,7 @@
 In short: dont try to __run__ js code, and produce a react tree matching pre-rendered one,
 but __use__ pre-rendered html until js code will be ready to replace it. Make it live.
 
-What else could be done on HTML level? Caching, _templatization_, and other good things to 🚀
-
+What else could be done on HTML level? Caching, _templatization_, and other good things to 🚀, just in a 3kb*.
 
 #### Prerendered component
 >Render something on server, and use it as HTML on the client
@@ -293,6 +292,12 @@ render the same, using rehydrated data.
 Until component go live - it's dead HTML code. You may be make it more alive by
 transforming HTML to React, using [html-to-react](https://github.com/aknuds1/html-to-react),
 and go live in a few steps.
+
+## Size 🤯
+Is this package 25kb? What are you thinking about?
+
+- no, __this package is just 3kb__ or less - tree shaking is great (but not in a dev mode)
+It __is__ bigger only on server.  
 
 ## Licence
 MIT

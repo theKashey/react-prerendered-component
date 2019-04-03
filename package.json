@@ -33,6 +33,7 @@
     "moment": "^2.22.2",
     "react-imported-component": "^5.2.4",
     "react-loadable": "^5.4.0",
+    "size-limit": "^1.0.0",
     "ts-react-toolbox": "^0.1.22"
   },
   "engines": {
@@ -53,5 +54,11 @@
     "hoist-react-statics": "^1.0.2",
     "nanoid": "^2.0.1",
     "react-uid": "^2.2.0"
-  }
+  },
+  "size-limit": [
+    {
+      "path": "dist/es2015/index.js",
+      "limit": "3.5 KB"
+    }
+  ]
 }

@@ -28,7 +28,7 @@ export interface WrapperProps {
 }
 
 const getInnerHTML = (id: string): string | null => {
-  const element = document && document.getElementById(id);
+  const element = typeof document !== 'undefined' && document.getElementById(id);
   return element ? element.innerHTML : null;
 };
 

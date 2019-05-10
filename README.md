@@ -35,7 +35,7 @@ More details - https://twitter.com/theKashey/status/1021739948536295424
 
 ## Usage
 
-1. Restore data from HTML
+1. __Restore__ data from HTML
 ```js
 <PrerenderedComponent
   // restore - access DIV and get "counter" from HTML
@@ -51,7 +51,26 @@ More details - https://twitter.com/theKashey/status/1021739948536295424
 Is components HTML was not generated during SSR, and it would be not present in the page code - 
 component will go `live` automatically, unless `strict` prop is set.
 
-2. Restore state from JSON stored among.
+2. To do a __partial hydrating__
+
+You may keep some pieces of your code as "raw HTML" until needed. This needed includes:
+- code splitting. You may decrease time to __First Meaningful Paint_ code splitting JS code needed by some blocks, keeping those blocks visible.
+Later, after js-chunk loaded, it will rehydrate existing HTML.
+- deferring content below the fold. The same code splitting, where loading if component might be triggered using interception observer.
+
+If your code splitting library (not React.lazy) supports "preload" - you may use it to control code splitting
+```js
+const AsyncLoadedComponent = loadable(() => import('./deferredComponent'));
+const AsyncLoadedComponent = imported(() => import('./deferredComponent'));
+
+<PrerenderedComponent
+  live={AsyncLoadedComponent.preload()} // once Promise resolved - component will go live  
+>
+  <AsyncLoadedComponent />
+</PrerenderedComponent>
+```
+
+3. Restore state from JSON stored among.
 ```js
 <PrerenderedComponent
   // restore - access DIV and get "counter" from HTML
@@ -63,43 +82,24 @@ component will go `live` automatically, unless `strict` prop is set.
   <p>Am I alive?</p>
   <i>{this.props.counter}</i>
 </PrerenderedComponent>
-```    
-
-3. Just do a partial hydrate
-If your code splitting library (not React.lazy) supports "preload" - you may use it to control code splitting
-```js
-const AsyncLoadedComponent = loadable(() => import('./deferredComponent'));
-const AsyncLoadedComponent = imported(() => import('./deferredComponent'));
-
-<PrerenderedComponent
-  live={AsyncLoadedComponent.preload()} // when Promise got resolve - component will go live  
->
-  <AsyncLoadedComponent />
-</PrerenderedComponent>
 ```
 
-## Safe SSR-friendly code splitting
-In the case of SSR it's quite important, and quite hard, to load all the used chunks before
-triggering `hydrate` method, or some _unloaded_ parts would be replaced by "Loaders".
+### This is not SSR friendly unless....
+Wrap your application with `PrerenderedControler`. This would provide context for all nested components, and "scope" _counters_ used to
+represent nodes.
 
-Preloaded could help here, if your code-splitting library support `preloading`, __even__ if it does not support SSR.
+This is more Server Side requirement.
 ```js
-import imported from 'react-imported-component';
-import {PrerenderedComponent} from "react-prerendered-component";
+import {PrerenderedControler} from 'react-prerendered-component';
 
-const AsyncComponent = imported(() => import('./myComponent.js'));
-
-<PrerenderedComponent
-  // component will "go live" when chunk loading would be done
-  live={AsyncComponent.preload()}
->
-  // until component is not "live" prerendered HTML code would be used
-  // that's why you need to `preload`
-  <AsyncComponent/>
-</PrerenderedComponent>
+ReactDOM.renderToString(<PrerenderedControler><App /></PrerenderedControler>);
 ```
-Yet again - it works with any library which could `preload`, which is literally any library except
-`React.lazy`.
+
+> !!!!
+
+Without `PrerenderedControler` SSR will always produce an unique HTML, you will be not able to match on Client Side.
+
+> !!!!
 
 ## Client side-only components
 It could be a case - some components should live only client-side, and completely skipped during SSR.
@@ -131,6 +131,31 @@ import {clientSideComponent} from 'react-prerendered-component';
 
 export default clientSideComponent(MyComponent);
 ```
+
+## Safe SSR-friendly code splitting
+Partial rehydration could benefit not only SSR-enhanced applications, but provide a better experience for simple code splitting.
+
+In the case of SSR it's quite important, and quite hard, to load all the used chunks before
+triggering `hydrate` method, or some _unloaded_ parts would be replaced by "Loaders".
+
+Preloaded could help here, if your code-splitting library support `preloading`, __even__ if it does not support SSR.
+```js
+import imported from 'react-imported-component';
+import {PrerenderedComponent} from "react-prerendered-component";
+
+const AsyncComponent = imported(() => import('./myComponent.js'));
+
+<PrerenderedComponent
+  // component will "go live" when chunk loading would be done
+  live={AsyncComponent.preload()}
+>
+  // until component is not "live" prerendered HTML code would be used
+  // that's why you need to `preload`
+  <AsyncComponent/>
+</PrerenderedComponent>
+```
+Yet again - it works with any library which could `preload`, which is literally any library except
+`React.lazy`.
 
 ## Caching
 Prerendered component could also work as a component-level cache.
@@ -298,6 +323,12 @@ Is this package 25kb? What are you thinking about?
 
 - no, __this package is just 3kb__ or less - tree shaking is great (but not in a dev mode)
 It __is__ bigger only on server.  
+
+## See also
+[react-progressive-hydration](https://github.com/GoogleChromeLabs/progressive-rendering-frameworks-samples/tree/master/react-progressive-hydration) - Google IO19 demo is quite similar to `react-prerendered-component`, but has a few differences.
+- does not use _stable uids_, utilizing `__html:''` + `sCU` hack to prevent HTML update
+- uses `React.hydrate` to make component live, breaking connectivity between React Trees
+- while it has some benefits (no real HTML update), it might not be production ready right now 
 
 ## Licence
 MIT

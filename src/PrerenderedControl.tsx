@@ -1,6 +1,7 @@
 import * as React from 'react';
 // @ts-ignore
 import * as nanoid from 'nanoid';
+import {UIDReset} from 'react-uid';
 import {isThisServer} from "./utils";
 
 export interface PrerenderedCache {
@@ -80,14 +81,16 @@ export class PrerenderedControler extends React.Component<PrerenderControls, Pre
   render() {
     const {children, ...props} = this.props;
     return (
-      <context.Provider value={{
-        isServer: isThisServer(),
-        hydrated: false,
-        ...props,
-        ...this.state,
-      }}>
-        {children}
-      </context.Provider>
+      <UIDReset>
+        <context.Provider value={{
+          isServer: isThisServer(),
+          hydrated: false,
+          ...props,
+          ...this.state,
+        }}>
+          {children}
+        </context.Provider>
+      </UIDReset>
     )
   }
 };

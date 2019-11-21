@@ -72,6 +72,7 @@ export class PrerenderedControler extends React.Component<PrerenderControls, Pre
 
   componentDidMount() {
     if (this.props.hydrated) {
+      // set back to un "un-hydrated" state
       this.setState({
         hydrated: false
       })

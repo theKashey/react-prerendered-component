@@ -1,5 +1,4 @@
-// @ts-ignore
-import * as isNode from 'detect-node';
+import {isNode} from 'detect-node-es';
 
 let isServerSide = isNode;
 

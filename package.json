@@ -27,7 +27,13 @@
   },
   "homepage": "https://github.com/theKashey/react-prerendered-component#readme",
   "peerDependencies": {
-    "react": "^16.3.0"
+    "@types/react": "^16.9.0 || ^17.0.0  || ^18.0.0",
+    "react": "^16.9.0 || ^17.0.0 || ^18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "moment": "^2.22.2",
@@ -50,10 +56,11 @@
     "state"
   ],
   "dependencies": {
-    "detect-node": "^2.0.4",
+    "detect-node-es": "^1.1.0",
     "hoist-react-statics": "^1.0.2",
     "nanoid": "^2.0.1",
-    "react-uid": "^2.2.0"
+    "react-uid": "^2.2.0",
+    "tslib": "^2.0.0"
   },
   "size-limit": [
     {

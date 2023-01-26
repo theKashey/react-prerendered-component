@@ -283,5 +283,19 @@ describe('Cache', () => {
       );
       expect(cacheRenderedToString(outputUpdate, control)).toEqual('<div><div title="yep3" data-title="undefined">yep1 + yep2</div></div>');
     });
+
+    it('partial information presence', () => {
+      const cache = createCache({});
+      const cacheControl = cacheControler(cache);
+      const result = renderToStaticMarkup(
+          <PrerenderedControler control={cacheControl}>
+            <p>{`Unpaired left curly brace { in text`}</p>
+            <CachedLocation cacheKey="the-key">any content</CachedLocation>
+            <p>{`Both {} or unpaired right curly brace } in text`}</p>
+          </PrerenderedControler>
+      );
+      const theRealResult = cacheRenderedToString(result, cacheControl);
+      expect(theRealResult).toEqual('<p>Unpaired left curly brace { in text</p>any content<p>Both {} or unpaired right curly brace } in text</p>')
+    })
   });
 });

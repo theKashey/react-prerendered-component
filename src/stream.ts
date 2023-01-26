@@ -245,10 +245,10 @@ export const process = (chunk: string, line: CacheLine, cache: CacheControl) => 
     } else {
       templatePush = tag;
       push = tag[0] + process(
-        tag.substr(1, tag.length - 2),
-        lineVariables(line.cache[line.stack[line.stack.length - 1]].variables),
+        tag.substring(1, tag.length - 2),
+        lineVariables(line.stack.length>0 ? line.cache[line.stack[line.stack.length - 1]].variables : {}),
         cache,
-      ) + tag[tag.length - 1];
+      ) + tag.substring(tag.length - 2)
     }
   }
 
